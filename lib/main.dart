@@ -1,32 +1,30 @@
 import 'package:flutter/material.dart';
+import 'screens/auth/splash_screen.dart';
+import 'auth/auth_controller.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 
-void main() async {
-
-    // Pastikan binding Flutter sudah diinisialisasi sebelum Firebase
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Inisialisasi Firebase dengan konfigurasi dari firebase_options.dart
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  AuthController.instance.initAuthListener();
 
-  runApp(const MainApp());
+  runApp(const MyApp());
 }
 
-
-class MainApp extends StatelessWidget {
-  const MainApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: Text('Hello World!'),
-        ),
-      ),
+    return MaterialApp(
+      title: 'Aplikasi Peminjaman Lab',
+      theme: ThemeData(primarySwatch: Colors.indigo),
+      home: const SplashScreen(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
