@@ -3,6 +3,7 @@ import '../../../auth/auth_controller.dart';
 
 import '../student/home_screen.dart' as StudentHomeScreen;
 import '../admin/home_screen.dart' as AdminHomeScreen;
+import '../aslab/home_screen.dart' as AslabHomeScreen;
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -39,6 +40,11 @@ class _LoginScreenState extends State<LoginScreen> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => const AdminHomeScreen.HomeScreen()),
+          );
+        } else if (userRole == 2) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const AslabHomeScreen.HomeScreen()),
           );
         } else {
 
