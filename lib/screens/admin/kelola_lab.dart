@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../widgets/admin_bottom_navbar.dart';
 import '../../../service/lab_service.dart';
 import '../../../models/labs/lab_model.dart';
+import 'detail_lab.dart'; // ⬅ TAMBAHKAN INI
 
 class KelolaLabScreen extends StatelessWidget {
   const KelolaLabScreen({super.key});
@@ -36,8 +37,7 @@ class KelolaLabScreen extends StatelessWidget {
                 children: [
                   Text(
                     "Daftar Lab Tersedia",
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   )
                 ],
               ),
@@ -64,38 +64,46 @@ class KelolaLabScreen extends StatelessWidget {
                     itemBuilder: (context, index) {
                       final lab = labs[index];
 
-                      return Container(
-                        padding: const EdgeInsets.all(16),
-                        margin: const EdgeInsets.only(bottom: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          mainAxisAlignment:
-                              MainAxisAlignment.spaceBetween,
-                          children: [
-                            Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "${lab.labKode} (${lab.labLocation})",
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16),
-                                ),
-                                Text(lab.labName),
-                              ],
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => DetailLabScreen(lab: lab),
                             ),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          margin: const EdgeInsets.only(bottom: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "${lab.labKode} (${lab.labLocation})",
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16),
+                                  ),
+                                  Text(lab.labName),
+                                ],
+                              ),
 
-                            Switch(
-                              value: lab.isShow,
-                              onChanged: (value) {
-                                labService.updateIsShow(lab.id, value);
-                              },
-                            ),
-                          ],
+                              Switch(
+                                value: lab.isShow,
+                                onChanged: (value) {
+                                  labService.updateIsShow(lab.id, value);
+                                },
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     },
@@ -155,12 +163,12 @@ class KelolaLabScreen extends StatelessWidget {
               ),
               TextField(
                 controller: kapasitasC,
+                keyboardType: TextInputType.number, // ⬅ lebih aman
                 decoration: const InputDecoration(labelText: "Kapasitas"),
               ),
               TextField(
                 controller: deskripsiC,
-                decoration:
-                    const InputDecoration(labelText: "Deskripsi Lab"),
+                decoration: const InputDecoration(labelText: "Deskripsi Lab"),
               ),
 
               const SizedBox(height: 20),
@@ -170,7 +178,9 @@ class KelolaLabScreen extends StatelessWidget {
                   if (kodeC.text.isEmpty ||
                       namaC.text.isEmpty ||
                       lokasiC.text.isEmpty ||
+                      kapasitasC.text.isEmpty ||
                       deskripsiC.text.isEmpty) {
+
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text("Semua field harus diisi!"),
