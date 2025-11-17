@@ -61,41 +61,41 @@ class _KelolaSlotScreenState extends State<KelolaSlotScreen> {
     ).format(slot.slotStart.toLocal());
     final String endTime = DateFormat('HH.mm').format(slot.slotEnd.toLocal());
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 15),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  "Slot ${index + 1}",
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Switch(
-                  value: slot.isOpen,
-                  onChanged: (v) => _toggleSlotStatus(slot, v),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => SlotFormDialog.show(
-                      context,
-                      lab: widget.lab,
-                      selectedDate: widget.selectedDate,
-                      slotToEdit: slot,
+    return GestureDetector(
+      onTap: () => SlotFormDialog.show(
+        context,
+        lab: widget.lab,
+        selectedDate: widget.selectedDate,
+        slotToEdit: slot,
+      ),
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 15),
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    slot.slotName.isNotEmpty ? slot.slotName : slot.slotCode,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
                     ),
+                  ),
+                  Switch(
+                    value: slot.isOpen,
+                    onChanged: (v) => _toggleSlotStatus(slot, v),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
                     child: Container(
                       padding: const EdgeInsets.all(12),
                       alignment: Alignment.center,
@@ -109,18 +109,10 @@ class _KelolaSlotScreenState extends State<KelolaSlotScreen> {
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 10),
-                const Text("-"),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => SlotFormDialog.show(
-                      context,
-                      lab: widget.lab,
-                      selectedDate: widget.selectedDate,
-                      slotToEdit: slot,
-                    ),
+                  const SizedBox(width: 10),
+                  const Text("-"),
+                  const SizedBox(width: 10),
+                  Expanded(
                     child: Container(
                       padding: const EdgeInsets.all(12),
                       alignment: Alignment.center,
@@ -134,14 +126,14 @@ class _KelolaSlotScreenState extends State<KelolaSlotScreen> {
                       ),
                     ),
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline, color: Colors.red),
-                  onPressed: () => _deleteSlot(slot.id),
-                ),
-              ],
-            ),
-          ],
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline, color: Colors.red),
+                    onPressed: () => _deleteSlot(slot.id),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -185,7 +177,6 @@ class _KelolaSlotScreenState extends State<KelolaSlotScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // INFORMASI LAB DALAM CARD
             _infoTile("Kode Lab", widget.lab.labKode),
             _infoTile("Nama Lab", widget.lab.labName),
             _infoTile("Lokasi", widget.lab.labLocation),
@@ -199,7 +190,6 @@ class _KelolaSlotScreenState extends State<KelolaSlotScreen> {
 
             const SizedBox(height: 10),
 
-            // DAFTAR SLOT
             StreamBuilder<List<SlotModel>>(
               stream: _slotsStream,
               builder: (context, snapshot) {

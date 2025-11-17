@@ -16,6 +16,9 @@ class SlotFormDialog {
     final TextEditingController kodeController = TextEditingController(
       text: slotToEdit?.slotCode ?? "",
     );
+    final TextEditingController slotNameController = TextEditingController(
+      text: slotToEdit?.slotName ?? "",
+    );
 
     TimeOfDay startTime = slotToEdit != null
         ? TimeOfDay.fromDateTime(slotToEdit.slotStart.toLocal())
@@ -53,69 +56,84 @@ class SlotFormDialog {
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextField(
-                        controller: kodeController,
-                        decoration: const InputDecoration(
-                          labelText: "Kode Slot",
-                          hintText: "Misal: S01",
-                          border: OutlineInputBorder(),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TextField(
+                          controller: kodeController,
+                          decoration: const InputDecoration(
+                            labelText: "Kode Slot",
+                            hintText: "Misal: S01",
+                            border: OutlineInputBorder(),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text("Tanggal", style: TextStyle(fontSize: 16)),
-                          Text(
-                            DateFormat('dd MMMM yyyy').format(selectedDate),
-                            style: const TextStyle(fontWeight: FontWeight.bold),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: slotNameController,
+                          decoration: const InputDecoration(
+                            labelText: "Nama Slot ",
+                            hintText: "Misal: Slot 1",
+                            border: OutlineInputBorder(),
                           ),
-                        ],
-                      ),
-                      const Divider(height: 24),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              "Tanggal",
+                              style: TextStyle(fontSize: 16),
+                            ),
+                            Text(
+                              DateFormat('dd MMMM yyyy').format(selectedDate),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Divider(height: 24),
 
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text("Waktu Mulai"),
-                          TextButton(
-                            child: Text(startTime.format(context)),
-                            onPressed: () async {
-                              final picked = await showTimePicker(
-                                context: context,
-                                initialTime: startTime,
-                              );
-                              if (picked != null) {
-                                setStateDialog(() => startTime = picked);
-                              }
-                            },
-                          ),
-                        ],
-                      ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text("Waktu Mulai"),
+                            TextButton(
+                              child: Text(startTime.format(context)),
+                              onPressed: () async {
+                                final picked = await showTimePicker(
+                                  context: context,
+                                  initialTime: startTime,
+                                );
+                                if (picked != null) {
+                                  setStateDialog(() => startTime = picked);
+                                }
+                              },
+                            ),
+                          ],
+                        ),
 
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text("Waktu Selesai"),
-                          TextButton(
-                            child: Text(endTime.format(context)),
-                            onPressed: () async {
-                              final picked = await showTimePicker(
-                                context: context,
-                                initialTime: endTime,
-                              );
-                              if (picked != null) {
-                                setStateDialog(() => endTime = picked);
-                              }
-                            },
-                          ),
-                        ],
-                      ),
-                    ],
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text("Waktu Selesai"),
+                            TextButton(
+                              child: Text(endTime.format(context)),
+                              onPressed: () async {
+                                final picked = await showTimePicker(
+                                  context: context,
+                                  initialTime: endTime,
+                                );
+                                if (picked != null) {
+                                  setStateDialog(() => endTime = picked);
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -137,7 +155,25 @@ class SlotFormDialog {
 
                     try {
                       if (isEdit) {
-                        // TODO: Buat updateSlot() nanti kalau perlu
+                        await slotService.updateSlot(
+                          slotId: slotToEdit!.id,
+                          slotCode: kodeController.text.trim(),
+                          slotName: slotNameController.text.trim(),
+                          slotStart: DateTime(
+                            selectedDate.year,
+                            selectedDate.month,
+                            selectedDate.day,
+                            startTime.hour,
+                            startTime.minute,
+                          ),
+                          slotEnd: DateTime(
+                            selectedDate.year,
+                            selectedDate.month,
+                            selectedDate.day,
+                            endTime.hour,
+                            endTime.minute,
+                          ),
+                        );
                       } else {
                         await slotService.addSlot(
                           lab: lab,
@@ -145,6 +181,7 @@ class SlotFormDialog {
                           startTime: startTime,
                           endTime: endTime,
                           slotCode: kodeController.text.trim(),
+                          slotName: slotNameController.text.trim(),
                         );
                       }
                     } catch (e) {

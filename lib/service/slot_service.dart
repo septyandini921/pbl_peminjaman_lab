@@ -46,6 +46,7 @@ class SlotService {
   Future<void> addSlot({
     required LabModel lab,
     required String slotCode,
+    required String slotName,
     required DateTime slotDate,
     required TimeOfDay startTime,
     required TimeOfDay endTime,
@@ -72,6 +73,7 @@ class SlotService {
     final newSlot = SlotModel(
       id: docRef.id,
       slotCode: "${lab.labKode}/$slotCode",
+      slotName: slotName,
       labRef: labRef,
       slotStart: startDateTime,
       slotEnd: endDateTime,
@@ -85,13 +87,29 @@ class SlotService {
         .set(newSlot.toMap());
   }
 
-  // update slot
+  // update slot status
   Future<void> updateSlotStatus({
     required String slotId,
     required bool isOpen,
   }) async {
     await _firestore.collection(_collectionName).doc(slotId).update({
       'is_open': isOpen,
+    });
+  }
+
+  // update slot
+  Future<void> updateSlot({
+    required String slotId,
+    required String slotCode,
+    required String slotName,
+    required DateTime slotStart,
+    required DateTime slotEnd,
+  }) async {
+    await _firestore.collection(_collectionName).doc(slotId).update({
+      'slot_code': slotCode,
+      'slot_name': slotName,
+      'slot_start': slotStart,
+      'slot_end': slotEnd,
     });
   }
 
