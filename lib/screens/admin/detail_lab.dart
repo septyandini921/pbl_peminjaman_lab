@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
 import '../../models/labs/lab_model.dart';
+import 'kelola_slot.dart';
 
 class DetailLabScreen extends StatefulWidget {
   final LabModel lab;
   const DetailLabScreen({super.key, required this.lab});
-
   @override
   State<DetailLabScreen> createState() => _DetailLabScreenState();
 }
 
 class _DetailLabScreenState extends State<DetailLabScreen> {
   DateTime? selectedDate;
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -22,27 +21,26 @@ class _DetailLabScreenState extends State<DetailLabScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
             _infoTile("Kode Lab", widget.lab.labKode),
             _infoTile("Nama Lab", widget.lab.labName),
             _infoTile("Lokasi", widget.lab.labLocation),
             _infoTile("Kapasitas", widget.lab.labCapacity.toString()),
             _infoTile("Deskripsi", widget.lab.labDescription),
-
             const SizedBox(height: 24),
             const Text(
               "Kelola Jadwal & Slot Peminjaman",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-
             const SizedBox(height: 16),
             _buildDatePicker(context),
+           
+            const SizedBox(height: 24),
+            _buildManageSlotButton(context),
           ],
         ),
       ),
@@ -65,8 +63,8 @@ class _DetailLabScreenState extends State<DetailLabScreen> {
             child: Text(
               value,
               textAlign: TextAlign.right,
-              overflow: TextOverflow.visible, 
-              softWrap: true, 
+              overflow: TextOverflow.visible,
+              softWrap: true,
             ),
           ),
         ],
@@ -78,19 +76,14 @@ class _DetailLabScreenState extends State<DetailLabScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          "Tanggal", 
-          style: TextStyle(fontWeight: FontWeight.bold)
-        ),
-
+        const Text("Tanggal", style: TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
-
         TextFormField(
           readOnly: true,
           controller: TextEditingController(
-            text: selectedDate == null 
-                ? "" 
-                : "${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}"
+            text: selectedDate == null
+                ? ""
+                : "${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}",
           ),
           decoration: InputDecoration(
             hintText: "Pilih tanggal",
@@ -108,29 +101,87 @@ class _DetailLabScreenState extends State<DetailLabScreen> {
     final picked = await showDatePicker(
       context: context,
       initialDate: selectedDate ?? DateTime.now(),
-      firstDate: DateTime(2000), 
-      lastDate: DateTime(2100), 
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: ColorScheme.light(
-              primary: Colors.blue, 
-              onPrimary: Colors.white, 
-              onSurface: Colors.black, 
+              primary: Colors.blue,
+              onPrimary: Colors.white,
+              onSurface: Colors.black,
             ),
             textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.blue, 
-              ),
+              style: TextButton.styleFrom(foregroundColor: Colors.blue),
             ),
           ),
           child: child!,
         );
       },
     );
-
     if (picked != null) {
       setState(() => selectedDate = picked);
     }
+  }
+
+  Widget _buildManageSlotButton(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        icon: const Icon(Icons.access_time),
+        label: const Text("Kelola Slot"),
+        style: ElevatedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          // Tombol selalu aktif
+          backgroundColor: const Color.fromRGBO(211, 158, 211, 1),
+          foregroundColor: Colors.white,
+        ),
+        onPressed: () async {
+          DateTime? dateToUse = selectedDate;
+          // 1. Jika tanggal belum dipilih, tampilkan Date Picker secara sinkron
+          if (dateToUse == null) {
+            dateToUse = await showDatePicker(
+              context: context,
+              initialDate: DateTime.now(),
+              firstDate: DateTime(2000),
+              lastDate: DateTime(2100),
+              builder: (context, child) {
+                return Theme(
+                  data: Theme.of(context).copyWith(
+                    colorScheme: const ColorScheme.light(
+                      primary: Colors.blue,
+                      onPrimary: Colors.white,
+                      onSurface: Colors.black,
+                    ),
+                    textButtonTheme: TextButtonThemeData(
+                      style: TextButton.styleFrom(foregroundColor: Colors.blue),
+                    ),
+                  ),
+                  child: child!,
+                );
+              },
+            );
+
+            // Perbarui state jika tanggal dipilih dari date picker yang baru dibuka
+            if (dateToUse != null) {
+              setState(() => selectedDate = dateToUse);
+            }
+          }
+          // 2. Jika tanggal berhasil didapatkan (baik dari state lama atau date picker baru), lakukan navigasi
+          if (dateToUse != null) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    KelolaSlotScreen(lab: widget.lab, selectedDate: dateToUse!),
+              ),
+            );
+          }
+        },
+      ),
+    );
   }
 }
