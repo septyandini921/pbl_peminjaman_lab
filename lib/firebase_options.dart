@@ -17,10 +17,7 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
-      );
+        return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -65,4 +62,14 @@ class DefaultFirebaseOptions {
     storageBucket: 'peminjaman-lab-1c332.firebasestorage.app',
     iosBundleId: 'com.example.pblPeminjamanLab',
   );
+
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: "AIzaSyARtiZlBBAdS0xKISmJFayiutt0U0uJUjw",
+    authDomain: "peminjaman-lab-1c332.firebaseapp.com",
+    projectId: "peminjaman-lab-1c332",
+    storageBucket: "peminjaman-lab-1c332.firebasestorage.app",
+    messagingSenderId: "260846768353",
+    appId: "1:260846768353:web:29bb18f30a60d8a29727a0",
+    measurementId: "G-FQRPPGYFJ3"
+    );
 }
