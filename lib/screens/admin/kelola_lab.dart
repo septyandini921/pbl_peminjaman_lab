@@ -13,7 +13,7 @@ class KelolaLabScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text("Kelola Lab")),
-      bottomNavigationBar: const BottomNavBar(currentIndex: 1),
+      bottomNavigationBar: const BottomNavBar(currentIndex: 2),
 
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.black87,

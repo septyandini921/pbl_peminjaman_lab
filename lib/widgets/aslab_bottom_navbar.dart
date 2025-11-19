@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../screens/admin/home_screen.dart';
-import '../screens/admin/kelola_lab.dart';
-import '../screens/admin/profil_admin.dart';
-import '../screens/admin/permintaan_peminjaman.dart';
+import '../screens/aslab/home_screen.dart';
+import '../screens/aslab/jadwal_screen.dart';
+import '../screens/aslab/profil_screen.dart';
+
 
 class BottomNavBar extends StatelessWidget {
   final int currentIndex;
@@ -31,7 +31,7 @@ class BottomNavBar extends StatelessWidget {
         Navigator.pushReplacement(
           context,
           PageRouteBuilder(
-            pageBuilder: (_, __, ___) => const PermintaanPeminjamanScreen(),
+            pageBuilder: (_, __, ___) => const JadwalScreen(),
             transitionDuration: Duration.zero,
             reverseTransitionDuration: Duration.zero,
           ),
@@ -42,18 +42,7 @@ class BottomNavBar extends StatelessWidget {
         Navigator.pushReplacement(
           context,
           PageRouteBuilder(
-            pageBuilder: (_, __, ___) => const KelolaLabScreen(),
-            transitionDuration: Duration.zero,
-            reverseTransitionDuration: Duration.zero,
-          ),
-        );
-        break;
-
-      case 3:
-        Navigator.pushReplacement(
-          context,
-          PageRouteBuilder(
-            pageBuilder: (_, __, ___) => const ProfilAdminScreen(),
+            pageBuilder: (_, __, ___) => const ProfilAslab(),
             transitionDuration: Duration.zero,
             reverseTransitionDuration: Duration.zero,
           ),
@@ -80,11 +69,7 @@ class BottomNavBar extends StatelessWidget {
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.list), 
-          label: "Permintaan",
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.science),
-          label: "Kelola Lab",
+          label: "Jadwal",
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.person), 
