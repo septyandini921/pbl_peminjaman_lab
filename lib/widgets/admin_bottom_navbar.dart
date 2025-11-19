@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../screens/admin/home_screen.dart';
 import '../screens/admin/kelola_lab.dart';
+import '../screens/admin/profil_admin.dart';
+import '../screens/admin/permintaan_peminjaman.dart';
 
 class BottomNavBar extends StatelessWidget {
   final int currentIndex;
@@ -24,7 +26,21 @@ class BottomNavBar extends StatelessWidget {
       case 1:
         Navigator.pushReplacement(
           context,
+          MaterialPageRoute(builder: (_) => const PermintaanPeminjamanScreen()),
+        );
+        break;
+
+      case 2:
+        Navigator.pushReplacement(
+          context,
           MaterialPageRoute(builder: (_) => const KelolaLabScreen()),
+        );
+        break;
+
+      case 3:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const ProfilAdminScreen()),
         );
         break;
     }
@@ -35,14 +51,28 @@ class BottomNavBar extends StatelessWidget {
     return BottomNavigationBar(
       currentIndex: currentIndex,
       onTap: (index) => _onTap(context, index),
+
+      backgroundColor: Colors.white,
+      selectedItemColor: Colors.indigo,
+      unselectedItemColor: Colors.grey,
+      type: BottomNavigationBarType.fixed, 
+
       items: const [
         BottomNavigationBarItem(
           icon: Icon(Icons.home),
           label: "Beranda",
         ),
         BottomNavigationBarItem(
+          icon: Icon(Icons.list), 
+          label: "Permintaan",
+        ),
+        BottomNavigationBarItem(
           icon: Icon(Icons.science),
           label: "Kelola Lab",
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.person), 
+          label: "Profil",
         ),
       ],
     );
