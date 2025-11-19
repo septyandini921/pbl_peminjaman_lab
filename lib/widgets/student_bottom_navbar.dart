@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import '../screens/admin/home_screen.dart';
-import '../screens/admin/kelola_lab.dart';
-import '../screens/admin/profil_admin.dart';
-import '../screens/admin/permintaan_peminjaman.dart';
+import '../screens/student/home_screen.dart';
+import '../screens/student/notification_screen.dart';
+import '../screens/student/info_screen.dart';
+import '../screens/student/profil_student.dart';
+
 
 class BottomNavBar extends StatelessWidget {
   final int currentIndex;
@@ -31,7 +32,7 @@ class BottomNavBar extends StatelessWidget {
         Navigator.pushReplacement(
           context,
           PageRouteBuilder(
-            pageBuilder: (_, __, ___) => const PermintaanPeminjamanScreen(),
+            pageBuilder: (_, __, ___) => const NotificationScreen(),
             transitionDuration: Duration.zero,
             reverseTransitionDuration: Duration.zero,
           ),
@@ -42,7 +43,7 @@ class BottomNavBar extends StatelessWidget {
         Navigator.pushReplacement(
           context,
           PageRouteBuilder(
-            pageBuilder: (_, __, ___) => const KelolaLabScreen(),
+            pageBuilder: (_, __, ___) => const InfoScreen(),
             transitionDuration: Duration.zero,
             reverseTransitionDuration: Duration.zero,
           ),
@@ -53,7 +54,7 @@ class BottomNavBar extends StatelessWidget {
         Navigator.pushReplacement(
           context,
           PageRouteBuilder(
-            pageBuilder: (_, __, ___) => const ProfilAdminScreen(),
+            pageBuilder: (_, __, ___) => const ProfilStudent(),
             transitionDuration: Duration.zero,
             reverseTransitionDuration: Duration.zero,
           ),
@@ -79,12 +80,12 @@ class BottomNavBar extends StatelessWidget {
           label: "Beranda",
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.list), 
-          label: "Permintaan",
+          icon: Icon(Icons.notifications), 
+          label: "Notifikasi",
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.science),
-          label: "Kelola Lab",
+          icon: Icon(Icons.info),
+          label: "Informasi",
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.person), 
