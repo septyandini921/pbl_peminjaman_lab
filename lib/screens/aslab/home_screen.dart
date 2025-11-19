@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../auth/auth_controller.dart';
 import '../auth/login_screen.dart';
+import '../../widgets/aslab_bottom_navbar.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -33,6 +34,7 @@ class HomeScreen extends StatelessWidget {
           },
         ),
       ),
+      bottomNavigationBar: const BottomNavBar(currentIndex: 0),
     );
   }
 }
