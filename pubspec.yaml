@@ -28,3 +28,8 @@ flutter_launcher_icons:
 
 flutter:
   uses-material-design: true
+
+  assets:
+    - assets/avatar/Avatar_Woman.jpg
+    - assets/avatar/Avatar_Man.jpg
+
