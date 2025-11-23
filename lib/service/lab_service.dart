@@ -2,10 +2,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/labs/lab_model.dart';
 
 class LabService {
-  final CollectionReference labsRef =
-      FirebaseFirestore.instance.collection('Labs');
+  final CollectionReference labsRef = FirebaseFirestore.instance.collection(
+    'Labs',
+  );
 
-  /// Get semua data lab 
+  /// Get semua data lab
   Stream<List<LabModel>> getLabs() {
     return labsRef.snapshots().map((snapshot) {
       return snapshot.docs.map((doc) {
@@ -15,6 +16,20 @@ class LabService {
         );
       }).toList();
     });
+  }
+
+  Stream<List<LabModel>> getActiveLabs() {
+    return labsRef
+        .where('is_show', isEqualTo: true) 
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs.map((doc) {
+            return LabModel.fromFirestore(
+              doc.id,
+              doc.data() as Map<String, dynamic>,
+            );
+          }).toList();
+        });
   }
 
   /// Toggle is_show field
