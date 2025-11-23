@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
 import '../../widgets/aslab_bottom_navbar.dart';
+import '../../widgets/app_bar.dart';
 
 class JadwalScreen extends StatelessWidget {
   const JadwalScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      appBar: PreferredSize(
-        preferredSize: Size.fromHeight(0), 
-        child: SizedBox.shrink(),
+    return Scaffold(
+      appBar: CustomAppBar(
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.more_vert, color: Colors.black87),
+            onPressed: () {},
+          ),
+        ],
       ),
-      body: Center(
+
+      body: const Center(
         child: Text(
           'ini halaman Jadwal',
           style: TextStyle(
@@ -21,7 +27,8 @@ class JadwalScreen extends StatelessWidget {
           ),
         ),
       ),
-      bottomNavigationBar: BottomNavBar(currentIndex: 1),
+
+      bottomNavigationBar: const BottomNavBar(currentIndex: 1),
     );
   }
 }

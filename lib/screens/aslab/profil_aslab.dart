@@ -2,18 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../service/user_service.dart';
 import '../../models/user/user_model.dart';
-import '../../widgets/admin_bottom_navbar.dart';
+import '../../widgets/aslab_bottom_navbar.dart';
 import '../../widgets/app_bar.dart';
-import 'admin_edit_profil.dart';
+import 'aslab_edit_profil.dart';
 
-class ProfilAdminScreen extends StatefulWidget {
-  const ProfilAdminScreen({super.key});
+class ProfilAslabScreen extends StatefulWidget {
+  const ProfilAslabScreen({super.key});
 
   @override
-  State<ProfilAdminScreen> createState() => _ProfilAdminScreenState();
+  State<ProfilAslabScreen> createState() => _ProfilAslabScreenState();
 }
 
-class _ProfilAdminScreenState extends State<ProfilAdminScreen> {
+class _ProfilAslabScreenState extends State<ProfilAslabScreen> {
   final userService = UserService();
   UserModel? userData;
 
@@ -33,7 +33,7 @@ class _ProfilAdminScreenState extends State<ProfilAdminScreen> {
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => const AdminEditProfilScreen(),
+        builder: (context) => const AslabEditProfilScreen(),
         settings: RouteSettings(arguments: userData),
       ),
     );
@@ -44,6 +44,7 @@ class _ProfilAdminScreenState extends State<ProfilAdminScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F6FF),
+
       appBar: CustomAppBar(
         actions: [
           IconButton(
@@ -52,6 +53,7 @@ class _ProfilAdminScreenState extends State<ProfilAdminScreen> {
           )
         ],
       ),
+
       body: userData == null
           ? const Center(child: CircularProgressIndicator())
           : Padding(
@@ -87,6 +89,7 @@ class _ProfilAdminScreenState extends State<ProfilAdminScreen> {
                             backgroundImage: AssetImage(userData!.avatar),
                           ),
                           const SizedBox(width: 12),
+
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -94,8 +97,9 @@ class _ProfilAdminScreenState extends State<ProfilAdminScreen> {
                                 Text(
                                   userData!.userName,
                                   style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold),
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
@@ -118,7 +122,8 @@ class _ProfilAdminScreenState extends State<ProfilAdminScreen> {
                 ],
               ),
             ),
-      bottomNavigationBar: const BottomNavBar(currentIndex: 3),
+
+      bottomNavigationBar: const BottomNavBar(currentIndex: 2),
     );
   }
 }

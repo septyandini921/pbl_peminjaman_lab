@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../screens/aslab/home_screen.dart';
 import '../screens/aslab/jadwal_screen.dart';
-import '../screens/aslab/profil_screen.dart';
+import '../screens/aslab/profil_aslab.dart';
 
 
 class BottomNavBar extends StatelessWidget {
@@ -42,7 +42,7 @@ class BottomNavBar extends StatelessWidget {
         Navigator.pushReplacement(
           context,
           PageRouteBuilder(
-            pageBuilder: (_, __, ___) => const ProfilAslab(),
+            pageBuilder: (_, __, ___) => const ProfilAslabScreen(),
             transitionDuration: Duration.zero,
             reverseTransitionDuration: Duration.zero,
           ),
