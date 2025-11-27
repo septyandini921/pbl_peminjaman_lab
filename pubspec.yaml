@@ -32,4 +32,6 @@ flutter:
   assets:
     - assets/avatar/Avatar_Woman.jpg
     - assets/avatar/Avatar_Man.jpg
-
+    - assets/images/logosimple.png
+    - assets/images/karakter.png
+    - assets/images/Simple.png
