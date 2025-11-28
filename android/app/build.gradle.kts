@@ -11,7 +11,7 @@ plugins {
 android {
     namespace = "com.example.pbl_peminjaman_lab"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = "29.0.14033849"
+    ndkVersion = flutter.ndkVersion
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
