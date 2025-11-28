@@ -156,7 +156,7 @@ class SlotFormDialog {
                     try {
                       if (isEdit) {
                         await slotService.updateSlot(
-                          slotId: slotToEdit!.id,
+                          slotId: slotToEdit.id,
                           slotCode: kodeController.text.trim(),
                           slotName: slotNameController.text.trim(),
                           slotStart: DateTime(

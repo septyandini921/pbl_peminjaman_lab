@@ -38,7 +38,7 @@ class _DetailLabScreenState extends State<DetailLabScreen> {
             ),
             const SizedBox(height: 16),
             _buildDatePicker(context),
-           
+
             const SizedBox(height: 24),
             _buildManageSlotButton(context),
           ],
@@ -47,30 +47,63 @@ class _DetailLabScreenState extends State<DetailLabScreen> {
     );
   }
 
-  Widget _infoTile(String label, String value) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade200,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
-          Flexible(
+Widget _infoTile(String label, String value) {
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 12),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ===== LABEL FIXED WIDTH =====
+        SizedBox(
+          width: 110, // atur sesuai kebutuhan biar sejajar
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFF6E7FF3),
+                  Color(0xFF8D6BE8),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ),
+
+        const SizedBox(width: 12),
+
+        // ===== VALUE (KANAN) =====
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.grey.shade400),
+            ),
             child: Text(
               value,
+              style: const TextStyle(fontSize: 14, color: Colors.black87),
               textAlign: TextAlign.right,
-              overflow: TextOverflow.visible,
               softWrap: true,
             ),
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _buildDatePicker(BuildContext context) {
     return Column(
