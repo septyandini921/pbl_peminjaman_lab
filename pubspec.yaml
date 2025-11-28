@@ -9,6 +9,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  image_picker: ^1.0.7
 
 dev_dependencies:
   flutter_test:
@@ -35,3 +36,4 @@ flutter:
     - assets/images/logosimple.png
     - assets/images/karakter.png
     - assets/images/Simple.png
+    - assets/icons/

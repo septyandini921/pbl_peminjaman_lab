@@ -36,21 +36,32 @@ class _AdminEditProfilScreenState extends State<AdminEditProfilScreen> {
 
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(60),
-        child: AppBar(
-          elevation: 0,
-          backgroundColor: const Color(0xFFD9D5EC),
-          centerTitle: true,
-          title: const Text(
-            "SIMPEL",
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 20,
-              color: Colors.black87,
+        child: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Color(0xFF4D55CC),
+                Color(0xFF38339C),
+              ],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+          child: AppBar(
+            elevation: 0,
+            backgroundColor: Colors.transparent, // biar gradient terlihat
+            centerTitle: true,
+            title: const Text(
+              "SIMPEL",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                color: Colors.white, // warna teks putih
+              ),
             ),
           ),
         ),
       ),
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -120,39 +131,63 @@ class _AdminEditProfilScreenState extends State<AdminEditProfilScreen> {
               ),
             ),
 
-            const SizedBox(height: 30),
+                  const SizedBox(height: 30),
+      
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                      ),
+                      onPressed: () async {
+                        String avatar = selectedAvatar == "female"
+                            ? "assets/avatar/Avatar_Woman.jpg"
+                            : "assets/avatar/Avatar_Man.jpg";
 
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF3C53CC),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30)),
-                ),
-                onPressed: () async {
-                  String avatar = selectedAvatar == "female"
-                      ? "assets/avatar/Avatar_Woman.jpg"
-                      : "assets/avatar/Avatar_Man.jpg";
+                        await userService.updateUser(
+                          user.uid,
+                          nameController.text,
+                          avatar,
+                        );
 
-                  await userService.updateUser(
-                    user.uid,
-                    nameController.text,
-                    avatar,
-                  );
-
-                  Navigator.pop(context);
-                },
-                child: const Text("Simpan Perubahan",
-                    style: TextStyle(fontSize: 16)),
+                        Navigator.pop(context);
+                      },
+                      child: Ink(
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [
+                              Color(0xFF4D55CC),
+                              Color(0xFF7A73D1),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        child: const Center(
+                          child: Text(
+                            "Simpan Perubahan",
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            )
-          ],
-        ),
-      ),
-    );
-  }
+            ),
+          );
+        }
 
   Widget avatarOption(String value, String imagePath) {
     bool active = selectedAvatar == value;

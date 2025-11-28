@@ -56,10 +56,10 @@ class _KelolaSlotScreenState extends State<KelolaSlotScreen> {
   }
 
   Widget _buildSlotRow(SlotModel slot, int index) {
-    final String startTime = DateFormat(
-      'HH.mm',
-    ).format(slot.slotStart.toLocal());
-    final String endTime = DateFormat('HH.mm').format(slot.slotEnd.toLocal());
+    final String startTime =
+        DateFormat('HH.mm').format(slot.slotStart.toLocal());
+    final String endTime =
+        DateFormat('HH.mm').format(slot.slotEnd.toLocal());
 
     return GestureDetector(
       onTap: () => SlotFormDialog.show(
@@ -139,28 +139,73 @@ class _KelolaSlotScreenState extends State<KelolaSlotScreen> {
     );
   }
 
+  // =============================== UI LABEL FIGMA ===============================
   Widget _infoTile(String label, String value) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      color: Colors.grey.shade50,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
-            Flexible(child: Text(value, textAlign: TextAlign.right)),
-          ],
-        ),
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 14),
+    child: IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Label kiri (gradient + rounded + center)
+          Container(
+            constraints: const BoxConstraints(
+              minWidth: 110, // bikin semua label sejajar rapi
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFF6E7FF3),
+                  Color(0xFF8D6BE8),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+              ),
+            ),
+          ),
+
+          const SizedBox(width: 12),
+
+          // Value kanan (border + rounded)
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey, width: 1),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              alignment: Alignment.centerLeft,
+              child: Text(
+                value,
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontSize: 15,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
+  // ==========================================================================
 
   @override
   Widget build(BuildContext context) {
-    final formattedDate = DateFormat("d MMMM yyyy").format(widget.selectedDate);
+    final formattedDate =
+        DateFormat("d MMMM yyyy").format(widget.selectedDate);
 
     return Scaffold(
       appBar: AppBar(title: Text("Kelola Slot: ${widget.lab.labName}")),
@@ -182,6 +227,7 @@ class _KelolaSlotScreenState extends State<KelolaSlotScreen> {
             _infoTile("Lokasi", widget.lab.labLocation),
             _infoTile("Deskripsi", widget.lab.labDescription),
             _infoTile("Tanggal", formattedDate),
+
             const SizedBox(height: 20),
             const Text(
               "Daftar Slot",
