@@ -3,6 +3,7 @@ import '../../../auth/auth_controller.dart';
 import '../student/home_screen.dart' as StudentHomeScreen;
 import '../admin/home_screen.dart' as AdminHomeScreen;
 import '../aslab/home_screen.dart' as AslabHomeScreen;
+import '../student/register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -150,8 +151,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Image.asset(
-                          'assets/images/Simple.png', // Path to your logo
-                          width: 100, // Adjust width as needed
+                          'assets/images/Simple.png', 
+                          width: 100, 
                         ),
                         const SizedBox(height: 16),
                         const Text(
@@ -218,6 +219,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 40),
 
                         _buildSignInButton(),
+
+                        const SizedBox(height: 24),
+                      _buildRegisterButton(),
                       ],
                     ),
                   ),
@@ -256,7 +260,7 @@ class _LoginScreenState extends State<LoginScreen> {
               controller: _emailController,
               decoration: const InputDecoration(
                 border: InputBorder.none,
-                hintText: 'Adminbhima435@gmail.com',
+                hintText: 'Masukkan Email ',
                 hintStyle: TextStyle(color: Color(0xFF4D55CC), fontSize: 14),
               ),
               style: const TextStyle(fontSize: 14, color: Colors.black87),
@@ -297,7 +301,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   obscureText: _obscurePassword,
                   decoration: const InputDecoration(
                     border: InputBorder.none,
-                    hintText: '••••••••',
+                    hintText: 'Masukkan Password',
                     hintStyle: TextStyle(
                       color: Color(0xFF4D55CC),
                       fontSize: 14,
@@ -437,4 +441,38 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
+
+  Widget _buildRegisterButton() {
+  return Center(
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Text(
+          'Belum punya akun? ',
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.black,
+          ),
+        ),
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const RegisterStudentScreen()),
+            );
+          },
+          child: const Text(
+            'Daftar akun',
+            style: TextStyle(
+              fontSize: 14,
+              color: Color(0xFF4D55CC),
+              fontWeight: FontWeight.bold,
+              decoration: TextDecoration.underline, 
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+} 
 }
