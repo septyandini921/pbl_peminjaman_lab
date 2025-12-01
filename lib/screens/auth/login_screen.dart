@@ -109,17 +109,14 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SafeArea(
         child: Stack(
           children: [
-            // BACKGROUND FULLSCREEN (GRADIENT)
             Container(
               decoration: const BoxDecoration(gradient: _primaryGradient),
             ),
 
-            // CONTENT (SCROLLVIEW)
             SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Back button area
                   Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -143,16 +140,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
 
                   const SizedBox(height: 40),
-
-                  // SIMPEL logo and text - Center aligned
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Image.asset(
-                          'assets/images/Simple.png', 
-                          width: 100, 
+                          'assets/images/Simple.png',
+                          width: 100,
                         ),
                         const SizedBox(height: 16),
                         const Text(
@@ -178,7 +173,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   const SizedBox(height: 40),
 
-                  // WHITE CARD for login form
                   Container(
                     width: double.infinity,
                     height: MediaQuery.of(context).size.height,
@@ -234,102 +228,79 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildEmailField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Email',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
+    Widget _buildEmailField() {
+      return TextField(
+        controller: _emailController,
+        keyboardType: TextInputType.emailAddress,
+        style: const TextStyle(fontSize: 14, color: Colors.black87),
+        decoration: InputDecoration(
+          labelText: 'Email',
+          hintText: 'Masukkan Email',
+          hintStyle: const TextStyle(fontSize: 14, color: Colors.black38),
+          labelStyle: const TextStyle(
             color: _primaryColor,
+            fontWeight: FontWeight.w500,
           ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          height: 50,
-          decoration: BoxDecoration(
-            color: Colors.white,
+
+          border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0xFF4D55CC)),
+            borderSide: const BorderSide(color: _primaryColor, width: 1.0),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Center(
-            child: TextField(
-              controller: _emailController,
-              decoration: const InputDecoration(
-                border: InputBorder.none,
-                hintText: 'Masukkan Email ',
-                hintStyle: TextStyle(color: Color(0xFF4D55CC), fontSize: 14),
-              ),
-              style: const TextStyle(fontSize: 14, color: Colors.black87),
-              keyboardType: TextInputType.emailAddress,
+
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: _primaryColor, width: 2.0),
+          ),
+
+          contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+          isDense: true,
+          constraints: const BoxConstraints(maxHeight: 50),
+        ),
+      );
+    }
+
+    Widget _buildPasswordField() {
+      return TextField(
+        controller: _passwordController,
+        obscureText: _obscurePassword,
+        style: const TextStyle(fontSize: 14, color: Colors.black87),
+        decoration: InputDecoration(
+          labelText: 'Password',
+          hintText: 'Masukkan Password',
+          hintStyle: const TextStyle(fontSize: 14, color: Colors.black38),
+
+          labelStyle: const TextStyle(
+            color: _primaryColor,
+            fontWeight: FontWeight.w500,
+          ),
+
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: _primaryColor, width: 1.0),
+          ),
+
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: _primaryColor, width: 2.0),
+          ),
+
+          contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+          isDense: true,
+          constraints: const BoxConstraints(maxHeight: 50),
+          suffixIcon: GestureDetector(
+            onTap: () {
+            },
+            child: Icon(
+              _obscurePassword
+                  ? Icons.visibility_off_outlined
+                  : Icons.visibility_outlined,
+              color: Colors.grey[500],
+              size: 20,
             ),
           ),
         ),
-      ],
-    );
-  }
-
-  Widget _buildPasswordField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Password',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: _primaryColor,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          height: 50,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0xFF4D55CC)),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _passwordController,
-                  obscureText: _obscurePassword,
-                  decoration: const InputDecoration(
-                    border: InputBorder.none,
-                    hintText: 'Masukkan Password',
-                    hintStyle: TextStyle(
-                      color: Color(0xFF4D55CC),
-                      fontSize: 14,
-                    ),
-                  ),
-                  style: const TextStyle(fontSize: 14, color: Colors.black87),
-                ),
-              ),
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _obscurePassword = !_obscurePassword;
-                  });
-                },
-                child: Icon(
-                  _obscurePassword
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined,
-                  color: Colors.grey[500],
-                  size: 20,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+      );
+    }
 
   Widget _buildErrorMessage() {
     return Container(
@@ -394,7 +365,6 @@ class _LoginScreenState extends State<LoginScreen> {
         // Forgot Password
         GestureDetector(
           onTap: () {
-            // TODO: Forgot password logic
           },
           child: const Text(
             'Forgot Password?',
@@ -467,12 +437,12 @@ class _LoginScreenState extends State<LoginScreen> {
               fontSize: 14,
               color: Color(0xFF4D55CC),
               fontWeight: FontWeight.bold,
-              decoration: TextDecoration.underline, 
+              decoration: TextDecoration.underline,
             ),
           ),
         ),
       ],
     ),
   );
-} 
+}
 }
