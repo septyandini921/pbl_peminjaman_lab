@@ -59,7 +59,7 @@ class _PeminjamanFormScreenState extends State<PeminjamanFormScreen> {
 
       final booking = BookingModel(
         id: '',
-        userId: _firestore.collection('Users').doc(userId),
+        userRef: _firestore.collection('Users').doc(userId),
         slotRef: slotRef,
         bookCode: bookCode,
         bookBy: namaCtrl.text,
@@ -69,7 +69,7 @@ class _PeminjamanFormScreenState extends State<PeminjamanFormScreen> {
         isPresent: false,
       );
 
-      await _firestore.collection('Booking').add(booking.toMap());
+      await _firestore.collection('Booking').add(booking.toFirestore());
 
       _showSnack("Peminjaman berhasil diajukan!");
       Navigator.pop(context);

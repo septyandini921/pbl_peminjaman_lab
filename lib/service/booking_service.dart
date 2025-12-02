@@ -1,43 +1,42 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/labs/lab_model.dart';
 import '../models/slots/slot_model.dart';
+import '../models/booking/booking_model.dart';
 
 class BookingService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final String _collectionName = "Bookings";
+  final String _collectionName = "Booking";
 
   // CEK SLOT APAKAH MASIH TERSEDIA
   Future<bool> isSlotAvailable({
     required LabModel lab,
     required SlotModel slot,
   }) async {
-    final labRef = _firestore.doc("Labs/${lab.id}");
     final slotRef = _firestore.doc("Slots/${slot.id}");
 
     final snapshot = await _firestore
         .collection(_collectionName)
-        .where("labId", isEqualTo: labRef)
         .where("slotId", isEqualTo: slotRef)
         .get();
 
-    return snapshot.docs.isEmpty; 
+    return snapshot.docs.isEmpty;
   }
 
-  // SLOT PER LAB BERDASARKAN TANGGAL
+  // GET SLOT PER LAB DAN DATE
   Future<List<SlotModel>> getSlotsForLab({
     required LabModel lab,
     required DateTime date,
   }) async {
-    final dayStart = DateTime(date.year, date.month, date.day);
-    final dayEnd = dayStart.add(const Duration(days: 1));
-
     final labRef = _firestore.doc("Labs/${lab.id}");
+
+    final dayStart = DateTime(date.year, date.month, date.day);
+    final nextDay = dayStart.add(const Duration(days: 1));
 
     final snapshot = await _firestore
         .collection("Slots")
         .where("lab_ref", isEqualTo: labRef)
         .where("slot_start", isGreaterThanOrEqualTo: dayStart)
-        .where("slot_start", isLessThan: dayEnd)
+        .where("slot_start", isLessThan: nextDay)
         .get();
 
     return snapshot.docs
@@ -45,31 +44,28 @@ class BookingService {
         .toList();
   }
 
-  // CEK SLOT YANG SUDAH DIBOOKING PADA TANGGAL TERSEBUT
+  // CEK SLOT YANG SUDAH DI BOOKING PADA TANGGAL TERSEBUT
   Future<List<DocumentReference>> checkBookedSlots({
     required LabModel lab,
     required DateTime date,
   }) async {
-    final dayStart = DateTime(date.year, date.month, date.day);
-    final dayEnd = dayStart.add(const Duration(days: 1));
-
     final labRef = _firestore.doc("Labs/${lab.id}");
+
+    final dayStart = DateTime(date.year, date.month, date.day);
+    final nextDay = dayStart.add(const Duration(days: 1));
 
     final snapshot = await _firestore
         .collection(_collectionName)
-        .where("labId", isEqualTo: labRef)
-        .where("is_open", isEqualTo: true)
-        .where("date", isGreaterThanOrEqualTo: dayStart)
-        .where("date", isLessThan: dayEnd)
+        .where("slot_start", isGreaterThanOrEqualTo: dayStart)
+        .where("slot_start", isLessThan: nextDay)
         .get();
 
-    // Ambil ID slotRef (Slots/{id})
     return snapshot.docs
-        .map((doc) => (doc["slotId"] as DocumentReference))
+        .map((doc) => doc["slotId"] as DocumentReference)
         .toList();
   }
 
-  // MENYIMPAN BOOKING DENGAN NOMOR URUT (BOOKCODE)
+  // CREATE BOOKING
   Future<String> createBooking({
     required LabModel lab,
     required SlotModel slot,
@@ -77,17 +73,17 @@ class BookingService {
     required String nama,
     required String nim,
     required String tujuan,
-    required int jumlahOrang,
   }) async {
-    final labRef = _firestore.doc("Labs/${lab.id}");
     final slotRef = _firestore.doc("Slots/${slot.id}");
     final userRef = _firestore.doc("Users/$userId");
+
+    // CEK APAKAH SLOT SUDAH DIBOOKING
     final slotDoc = await slotRef.get();
     if (slotDoc.exists && slotDoc["is_booked"] == true) {
       return "SLOT_TIDAK_TERSEDIA";
     }
 
-    // Hitung bookCode seperti biasa
+    // Hitung BookCode
     final dayStart = DateTime(
       slot.slotStart.year,
       slot.slotStart.month,
@@ -97,38 +93,61 @@ class BookingService {
 
     final snapshot = await _firestore
         .collection(_collectionName)
-        .where("date", isGreaterThanOrEqualTo: dayStart)
-        .where("date", isLessThan: nextDay)
+        .where("slot_start", isGreaterThanOrEqualTo: dayStart)
+        .where("slot_start", isLessThan: nextDay)
         .get();
 
-    final nomorUrut = (snapshot.docs.length + 1).toString().padLeft(3, '0');
-    final dateKey =
-        "${dayStart.year}${dayStart.month.toString().padLeft(2, '0')}${dayStart.day.toString().padLeft(2, '0')}";
+    final nomorUrut =
+        (snapshot.docs.length + 1).toString().padLeft(4, '0');
 
-    final bookCode = "${slot.slotCode}/$dateKey/$nomorUrut";
+    final tanggalFormat =
+        "${dayStart.year}-${dayStart.month.toString().padLeft(2, '0')}-${dayStart.day.toString().padLeft(2, '0')}";
 
-    // SIMPAN BOOKING
+    final bookCode = "${slot.slotCode}/$tanggalFormat/$nomorUrut";
+
+    // SIMPAN DATA
     await _firestore.collection(_collectionName).add({
-      "labId": labRef,
+      "book_by": nama,
+      "book_nim": nim,
+      "book_purpose": tujuan,
+      "book_code": bookCode,
+
       "slotId": slotRef,
-      "userId": userRef,
-      "labName": lab.labName,
+      "user_id": userRef,
+
       "slot_start": Timestamp.fromDate(slot.slotStart),
       "slot_end": Timestamp.fromDate(slot.slotEnd),
-      "date": Timestamp.fromDate(dayStart),
-      "bookCode": bookCode,
-      "nama": nama,
-      "nim": nim,
-      "tujuan": tujuan,
-      "jumlahOrang": jumlahOrang,
+
+      "is_confirmed": false,
+      "is_present": false,
+
       "createdAt": FieldValue.serverTimestamp(),
-      "isConfirmed": false,
-      "isPresent": false,
     });
 
     // UPDATE SLOT JADI BOOKED
     await slotRef.update({"is_booked": true});
 
     return "SUCCESS";
+  }
+
+  // STREAM BOOKING BELUM DIKONFIRMASI
+  Stream<List<BookingModel>> getPendingBookings() {
+    return _firestore
+        .collection(_collectionName)
+        .where("is_confirmed", isEqualTo: false)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => BookingModel.fromFirestore(doc.id, doc.data()))
+            .toList());
+  }
+
+  // STREAM SEMUA BOOKING
+  Stream<List<BookingModel>> getAllBookings() {
+    return _firestore
+        .collection(_collectionName)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => BookingModel.fromFirestore(doc.id, doc.data()))
+            .toList());
   }
 }
