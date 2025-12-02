@@ -1,40 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../../widgets/admin_bottom_navbar.dart';
+import '../../../widgets/app_bar.dart';
 import '../../../service/lab_service.dart';
 import '../../../models/labs/lab_model.dart';
-import 'detail_lab.dart'; // ⬅ TAMBAHKAN INI
+import 'detail_lab.dart';
 
 class KelolaLabScreen extends StatelessWidget {
   const KelolaLabScreen({super.key});
-
-  // ======================== HEADER CUSTOM ==========================
-  Widget _customHeader() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.only(top: 45, bottom: 25),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF4D55CC), Color(0xFF38339C)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(30),
-          bottomRight: Radius.circular(30),
-        ),
-      ),
-      child: const Center(
-        child: Text(
-          "SIMPEL",
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,14 +14,7 @@ class KelolaLabScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-
-      // ======================== HEADER ==========================
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(110),
-        child: _customHeader(),
-      ),
-
-      // ======================== ADD BUTTON ==========================
+      appBar: const CustomAppBar(actions: []),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.black87,
         child: const Icon(Icons.add, color: Colors.white),
@@ -57,8 +22,6 @@ class KelolaLabScreen extends StatelessWidget {
           _showAddLabModal(context, labService);
         },
       ),
-
-      // ======================== BODY ==========================
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -150,13 +113,9 @@ class KelolaLabScreen extends StatelessWidget {
           ],
         ),
       ),
-
-      // ======================== NAVBAR ==========================
       bottomNavigationBar: const BottomNavBar(currentIndex: 2),
     );
   }
-
-  /// ======================== MODAL TAMBAH LAB ==========================
   void _showAddLabModal(BuildContext context, LabService labService) {
     final kodeC = TextEditingController();
     final namaC = TextEditingController();
@@ -181,9 +140,6 @@ class KelolaLabScreen extends StatelessWidget {
           ),
           child: StatefulBuilder(
             builder: (context, setState) {
-              // ==================================================================
-              // FIELD STYLE PERSIS FIGMA — SUDAH DISESUAIKAN & DIRAPIKAN
-              // ==================================================================
               Widget figmaField(
                 String label,
                 TextEditingController controller, {
@@ -194,9 +150,8 @@ class KelolaLabScreen extends StatelessWidget {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      // LABEL UNGU FIX WIDTH
                       Container(
-                        width: 110, // <<< FIX UTAMA: agar semua sejajar
+                        width: 110,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 10,
                           vertical: 12,
@@ -219,11 +174,9 @@ class KelolaLabScreen extends StatelessWidget {
                       ),
 
                       const SizedBox(width: 12),
-
-                      // INPUT BOX RAPI
                       Expanded(
                         child: Container(
-                          height: 48, // <<< FIX: tinggi seragam
+                          height: 48,
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           decoration: BoxDecoration(
                             color: Colors.white,
@@ -246,10 +199,6 @@ class KelolaLabScreen extends StatelessWidget {
                   ),
                 );
               }
-
-              // ==================================================================
-              // MAIN MODAL UI
-              // ==================================================================
               return SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -275,8 +224,6 @@ class KelolaLabScreen extends StatelessWidget {
                     ),
 
                     const SizedBox(height: 10),
-
-                    // FORM FIELDS
                     figmaField("Kode Lab", kodeC),
                     figmaField("Nama Lab", namaC),
                     figmaField("Lokasi", lokasiC),
@@ -284,8 +231,6 @@ class KelolaLabScreen extends StatelessWidget {
                     figmaField("Deskripsi", deskripsiC),
 
                     const SizedBox(height: 10),
-
-                    // SUBMIT BUTTON
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
