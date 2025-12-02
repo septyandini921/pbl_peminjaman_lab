@@ -65,7 +65,9 @@ class _PeminjamanFormScreenState extends State<PeminjamanFormScreen> {
         bookBy: namaCtrl.text,
         bookNim: nimCtrl.text,
         bookPurpose: tujuan!,
+        participantCount: int.tryParse(jumlahCtrl.text) ?? 1,
         isConfirmed: false,
+        isRejected: false,
         isPresent: false,
       );
 
@@ -217,7 +219,6 @@ class _PeminjamanFormScreenState extends State<PeminjamanFormScreen> {
                 ),
               ),
 
-              // PERATURAN
               Card(
                 elevation: 3,
                 shape: RoundedRectangleBorder(

@@ -7,7 +7,6 @@ class BookingService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final String _collectionName = "Booking";
 
-  // CEK SLOT APAKAH MASIH TERSEDIA
   Future<bool> isSlotAvailable({
     required LabModel lab,
     required SlotModel slot,
@@ -22,7 +21,6 @@ class BookingService {
     return snapshot.docs.isEmpty;
   }
 
-  // GET SLOT PER LAB DAN DATE
   Future<List<SlotModel>> getSlotsForLab({
     required LabModel lab,
     required DateTime date,
@@ -44,7 +42,6 @@ class BookingService {
         .toList();
   }
 
-  // CEK SLOT YANG SUDAH DI BOOKING PADA TANGGAL TERSEBUT
   Future<List<DocumentReference>> checkBookedSlots({
     required LabModel lab,
     required DateTime date,
@@ -65,7 +62,6 @@ class BookingService {
         .toList();
   }
 
-  // CREATE BOOKING
   Future<String> createBooking({
     required LabModel lab,
     required SlotModel slot,
@@ -73,17 +69,16 @@ class BookingService {
     required String nama,
     required String nim,
     required String tujuan,
+    required int participantCount, 
   }) async {
     final slotRef = _firestore.doc("Slots/${slot.id}");
     final userRef = _firestore.doc("Users/$userId");
 
-    // CEK APAKAH SLOT SUDAH DIBOOKING
     final slotDoc = await slotRef.get();
     if (slotDoc.exists && slotDoc["is_booked"] == true) {
       return "SLOT_TIDAK_TERSEDIA";
     }
 
-    // Hitung BookCode
     final dayStart = DateTime(
       slot.slotStart.year,
       slot.slotStart.month,
@@ -105,12 +100,12 @@ class BookingService {
 
     final bookCode = "${slot.slotCode}/$tanggalFormat/$nomorUrut";
 
-    // SIMPAN DATA
     await _firestore.collection(_collectionName).add({
       "book_by": nama,
       "book_nim": nim,
       "book_purpose": tujuan,
       "book_code": bookCode,
+      "participant_count": participantCount, 
 
       "slotId": slotRef,
       "user_id": userRef,
@@ -119,29 +114,28 @@ class BookingService {
       "slot_end": Timestamp.fromDate(slot.slotEnd),
 
       "is_confirmed": false,
+      "is_rejected": false, 
       "is_present": false,
 
       "createdAt": FieldValue.serverTimestamp(),
     });
 
-    // UPDATE SLOT JADI BOOKED
     await slotRef.update({"is_booked": true});
 
     return "SUCCESS";
   }
 
-  // STREAM BOOKING BELUM DIKONFIRMASI
   Stream<List<BookingModel>> getPendingBookings() {
     return _firestore
         .collection(_collectionName)
         .where("is_confirmed", isEqualTo: false)
+        .where("is_rejected", isEqualTo: false) 
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) => BookingModel.fromFirestore(doc.id, doc.data()))
             .toList());
   }
 
-  // STREAM SEMUA BOOKING
   Stream<List<BookingModel>> getAllBookings() {
     return _firestore
         .collection(_collectionName)
@@ -149,5 +143,28 @@ class BookingService {
         .map((snapshot) => snapshot.docs
             .map((doc) => BookingModel.fromFirestore(doc.id, doc.data()))
             .toList());
+  }
+
+  Future<void> updateBookingStatus({
+    required String bookingId,
+    required bool isConfirmed,
+  }) async {
+    await _firestore.collection(_collectionName).doc(bookingId).update({
+      "is_confirmed": isConfirmed,
+    });
+  }
+
+  Future<void> setApproved(String bookingId) async {
+    await _firestore.collection(_collectionName).doc(bookingId).update({
+      'is_confirmed': true,
+      'is_rejected': false,
+    });
+  }
+
+  Future<void> setRejected(String bookingId) async {
+    await _firestore.collection(_collectionName).doc(bookingId).update({
+      'is_confirmed': false,
+      'is_rejected': true,
+    });
   }
 }
