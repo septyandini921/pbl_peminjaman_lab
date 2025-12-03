@@ -9,7 +9,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  intl: ^0.18.0
   image_picker: ^1.0.7
+  firebase_core: ^4.2.1
+  firebase_auth: ^6.1.2
+  cloud_firestore: ^6.1.0
 
 dev_dependencies:
   flutter_test:
@@ -29,11 +33,12 @@ flutter_launcher_icons:
 
 flutter:
   uses-material-design: true
-
   assets:
     - assets/avatar/Avatar_Woman.jpg
     - assets/avatar/Avatar_Man.jpg
     - assets/images/logosimple.png
     - assets/images/karakter.png
     - assets/images/Simple.png
-    - assets/icons/
+    - assets/icons/Simple_icons.png
+    - assets/icons/bot.png
+    - assets/icons/lab_icon.png
