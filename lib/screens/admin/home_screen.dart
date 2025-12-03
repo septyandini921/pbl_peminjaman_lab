@@ -14,7 +14,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int currentIndex = 0;
 
-  // ==================== ITEM NAVBAR ====================
   Widget _navItem(IconData icon, String label, int index) {
     bool active = currentIndex == index;
 
@@ -61,16 +60,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ========================== BUILD ==========================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-
-      // ========== PAKAI CUSTOM APP BAR ==========
       appBar: const CustomAppBar(actions: []),
-
-      // =================== NAVBAR ===================
       bottomNavigationBar: Container(
         color: const Color(0xFF4D55CC),
         padding: const EdgeInsets.symmetric(vertical: 10),
@@ -88,16 +82,12 @@ class _HomeScreenState extends State<HomeScreen> {
       body: _buildBody(),
     );
   }
-
-  // ==================== HOME BODY ====================
   Widget _buildBody() {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         children: [
           const SizedBox(height: 20),
-
-          // ========= CARD SELAMAT DATANG (SEKARANG DI BAWAH APP BAR) =========
           _welcomeCard(),
           const SizedBox(height: 25),
 
@@ -108,8 +98,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
-  // ==================== CARD WELCOME ====================
   Widget _welcomeCard() {
     return Container(
       width: double.infinity,
@@ -142,7 +130,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ==================== Statistik SIMPEL ====================
+
   Widget _statistikSimpel() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -202,7 +190,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ==================== LAB PALING DIPINJAM ====================
+
   Widget _labPalingDipinjam() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -250,7 +238,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ==================== Kotak kecil angka ====================
   Widget _statBox(String value, String label) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 28),
