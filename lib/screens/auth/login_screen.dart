@@ -259,48 +259,53 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     }
 
-    Widget _buildPasswordField() {
-      return TextField(
-        controller: _passwordController,
-        obscureText: _obscurePassword,
-        style: const TextStyle(fontSize: 14, color: Colors.black87),
-        decoration: InputDecoration(
-          labelText: 'Password',
-          hintText: 'Masukkan Password',
-          hintStyle: const TextStyle(fontSize: 14, color: Colors.black38),
+   Widget _buildPasswordField() {
+  return TextField(
+    controller: _passwordController,
+    obscureText: _obscurePassword,
+    style: const TextStyle(fontSize: 14, color: Colors.black87),
+    decoration: InputDecoration(
+      labelText: 'Password',
+      hintText: 'Masukkan Password',
+      hintStyle: const TextStyle(fontSize: 14, color: Colors.black38),
 
-          labelStyle: const TextStyle(
-            color: _primaryColor,
-            fontWeight: FontWeight.w500,
-          ),
+      labelStyle: const TextStyle(
+        color: _primaryColor,
+        fontWeight: FontWeight.w500,
+      ),
 
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: _primaryColor, width: 1.0),
-          ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: _primaryColor, width: 1.0),
+      ),
 
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: _primaryColor, width: 2.0),
-          ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: _primaryColor, width: 2.0),
+      ),
 
-          contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-          isDense: true,
-          constraints: const BoxConstraints(maxHeight: 50),
-          suffixIcon: GestureDetector(
-            onTap: () {
-            },
-            child: Icon(
-              _obscurePassword
-                  ? Icons.visibility_off_outlined
-                  : Icons.visibility_outlined,
-              color: Colors.grey[500],
-              size: 20,
-            ),
-          ),
+      contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+      isDense: true,
+      constraints: const BoxConstraints(maxHeight: 50),
+
+      // ✅ sudah diperbaiki
+      suffixIcon: IconButton(
+        icon: Icon(
+          _obscurePassword
+              ? Icons.visibility_off_outlined
+              : Icons.visibility_outlined,
+          color: Colors.grey[600],
+          size: 20,
         ),
-      );
-    }
+        onPressed: () {
+          setState(() {
+            _obscurePassword = !_obscurePassword;
+          });
+        },
+      ),
+    ),
+  );
+}
 
   Widget _buildErrorMessage() {
     return Container(
