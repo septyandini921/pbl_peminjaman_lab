@@ -132,7 +132,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         const Text(
-                          'Back',
+                          'Kembali',
                           style: TextStyle(color: Colors.white, fontSize: 18),
                         ),
                       ],
