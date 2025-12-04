@@ -117,4 +117,45 @@ class SlotService {
   Future<void> deleteSlot({required String slotId}) async {
     await _firestore.collection(_collectionName).doc(slotId).delete();
   }
+
+Stream<int> getTotalOpenSlotsWeekly() {
+        // Tentukan awal hari ini (00:00:00)
+        final startOfToday = DateTime(
+            DateTime.now().year, 
+            DateTime.now().month, 
+            DateTime.now().day
+        );
+        // Rentang 7 hari penuh dari awal hari ini
+        final sevenDaysFromNow = startOfToday.add(const Duration(days: 7));
+
+        return _firestore
+            .collection(_collectionName)
+            .where('is_open', isEqualTo: true)
+            // WAJIB ADA untuk Indeks Komposit dan filter jangkauan
+            .orderBy('slot_start') 
+            .where('slot_start', isGreaterThanOrEqualTo: startOfToday) // Mulai dari 00:00 hari ini
+            .where('slot_start', isLessThan: sevenDaysFromNow)
+            .snapshots()
+            .map((snapshot) => snapshot.docs.length);
+    }
+
+Stream<int> getTotalUsedSlotsWeekly() {
+    // Ambil tanggal hari ini, lalu set waktu ke 00:00:00 (Awal hari)
+    final startOfToday = DateTime(
+        DateTime.now().year, 
+        DateTime.now().month, 
+        DateTime.now().day
+    );
+    final sevenDaysFromNow = startOfToday.add(const Duration(days: 7)); // Rentang 7 hari penuh dari awal hari ini
+
+    return _firestore
+        .collection(_collectionName)
+        .where('is_booked', isEqualTo: true)
+        .orderBy('slot_start') // OrderBy harus tetap ada
+        .where('slot_start', isGreaterThanOrEqualTo: startOfToday) // <--- UBAH KE START OF DAY
+        .where('slot_start', isLessThan: sevenDaysFromNow)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
+}
+
 }
