@@ -405,9 +405,9 @@ class _PeminjamanFormScreenState extends State<PeminjamanFormScreen> {
 
       await _firestore.collection('Booking').add(booking.toFirestore());
 
-      _showSnack("Peminjaman berhasil diajukan!");
-      Navigator.pop(context);
-      Navigator.pop(context);
+      // Show modal upon success
+      _showPeminjamanBerhasilModal(context);
+
     } catch (e) {
       _showSnack("Gagal menyimpan: $e");
     }
@@ -426,38 +426,86 @@ class _PeminjamanFormScreenState extends State<PeminjamanFormScreen> {
     return "$slotCode/$tanggal/$nomorUrut";
   }
 
-  void _showSnack(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
-  }
+void _showSnack(String message) {
+  ScaffoldMessenger.of(
+    context,
+  ).showSnackBar(SnackBar(content: Text(message)));
+}
 
-  Widget _buildTextFormField(
-    TextEditingController controller,
-    String hint, {
-    TextInputType keyboardType = TextInputType.text,
-  }) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      decoration: InputDecoration(
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 14,
+// Merged modal function from user to show success dialog and pop routes
+void _showPeminjamanBerhasilModal(BuildContext parentContext) {
+  showDialog(
+    context: parentContext,
+    builder: (BuildContext dialogContext) {
+      return AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
         ),
-        hintText: hint,
-        hintStyle: const TextStyle(
-          fontStyle: FontStyle.italic,
-          color: Colors.grey,
+        title: const Text(
+          "Peminjaman Berhasil",
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
         ),
-        border: InputBorder.none,
+        content: const Text(
+          "Silakan Tunggu Konfirmasi dalam ± 48 Jam Melalui Notifikasi",
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 16),
+        ),
+        actions: <Widget>[
+          // Center the button horizontally
+          Center(
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF7A73D1), // Ungu warna tombol
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                textStyle: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              onPressed: () {
+                Navigator.of(dialogContext).pop(); // Menutup modal
+                Navigator.of(parentContext).pop(); // Kembali satu layar
+                Navigator.of(parentContext).pop(); // Kembali lagi (sesuai behavior sebelumnya)
+              },
+              child: const Text("OK"),
+            ),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+Widget _buildTextFormField(
+  TextEditingController controller,
+  String hint, {
+  TextInputType keyboardType = TextInputType.text,
+}) {
+  return TextFormField(
+    controller: controller,
+    keyboardType: keyboardType,
+    decoration: InputDecoration(
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 14,
       ),
-      style: const TextStyle(fontSize: 16, color: Colors.black),
-      validator: (v) => v == null || v.isEmpty ? "Wajib diisi" : null,
-    );
-  }
+      hintText: hint,
+      hintStyle: const TextStyle(
+        fontStyle: FontStyle.italic,
+        color: Colors.grey,
+      ),
+      border: InputBorder.none,
+    ),
+    style: const TextStyle(fontSize: 16, color: Colors.black),
+    validator: (v) => v == null || v.isEmpty ? "Wajib diisi" : null,
+  );
+}
 
-  Future<void> _dialogTambahTujuan() async {
+Future<void> _dialogTambahTujuan() async {
     final TextEditingController ctrl = TextEditingController();
 
     await showDialog<void>(
