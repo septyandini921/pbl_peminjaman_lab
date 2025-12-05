@@ -34,34 +34,31 @@ class _RegisterStudentScreenState extends State<RegisterStudentScreen> {
     });
 
     try {
-      await AuthController.instance.register(
-        nameC.text.trim(),
-        emailC.text.trim(),
-        passC.text.trim(),
-        0,
-      );
+    await AuthController.instance.register(
+      nameC.text.trim(),
+      emailC.text.trim(),
+      passC.text.trim(),
+      0,
+    );
 
-      if (!mounted) return;
+    if (!mounted) return;
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const StudentHomeScreen.HomeScreen()),
-      );
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Registrasi berhasil, silakan login")),
+    );
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Registrasi berhasil")),
-      );
-    } catch (e) {
-      setState(() {
-        errorMessage = e.toString().contains('email-already-in-use')
-            ? "Email sudah terdaftar."
-            : "Registrasi Gagal: $e";
-      });
-    } finally {
-      if (mounted) setState(() => isLoading = false);
-    }
+    Navigator.pop(context);
+
+  } catch (e) {
+    setState(() {
+      errorMessage = e.toString().contains('email-already-in-use')
+          ? "Email sudah terdaftar."
+          : "Registrasi Gagal: $e";
+    });
+  } finally {
+    if (mounted) setState(() => isLoading = false);
   }
-
+  }
   void navigateToLogin() {
     Navigator.pop(context);
   }
@@ -288,7 +285,7 @@ class _RegisterStudentScreenState extends State<RegisterStudentScreen> {
                         onPressed: () => Navigator.pop(context),
                       ),
                       const Text(
-                        "Back",
+                        "Kembali",
                         style: TextStyle(
                             color: Colors.white,
                             fontSize: 18,
