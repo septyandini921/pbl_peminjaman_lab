@@ -19,7 +19,10 @@ class DetailPeminjamanAdmin extends StatelessWidget {
         title: const Text(
           "SIMPEL",
           style: TextStyle(
-              color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+            color: Colors.white,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         backgroundColor: const Color(0xFF4D55CC),
         centerTitle: true,
@@ -62,8 +65,11 @@ class DetailPeminjamanAdmin extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: const [
-                      Icon(Icons.arrow_back_ios_new,
-                          color: Color(0xFF4D55CC), size: 20),
+                      Icon(
+                        Icons.arrow_back_ios_new,
+                        color: Color(0xFF4D55CC),
+                        size: 20,
+                      ),
                       SizedBox(width: 8),
                       Text(
                         "Kembali",
@@ -82,11 +88,15 @@ class DetailPeminjamanAdmin extends StatelessWidget {
                 RichText(
                   text: TextSpan(
                     style: const TextStyle(
-                        fontSize: 18, color: Colors.black, fontFamily: 'Roboto'),
+                      fontSize: 18,
+                      color: Colors.black,
+                      fontFamily: 'Roboto',
+                    ),
                     children: [
                       const TextSpan(
-                          text: "Peminjaman ",
-                          style: TextStyle(fontWeight: FontWeight.bold)),
+                        text: "Peminjaman ",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
                       TextSpan(text: booking.bookCode),
                     ],
                   ),
@@ -104,11 +114,15 @@ class DetailPeminjamanAdmin extends StatelessWidget {
 
                 const SizedBox(height: 25),
 
-                _buildFigmaRow("Tanggal Pinjam",
-                    "${slotStart.day}-${slotStart.month}-${slotStart.year}"),
+                _buildFigmaRow(
+                  "Tanggal Pinjam",
+                  "${slotStart.day}-${slotStart.month}-${slotStart.year}",
+                ),
 
-                _buildFigmaRow("Slot Pinjam",
-                    "Slot : ${slotStart.hour}:${slotStart.minute.toString().padLeft(2, "0")} - ${slotEnd.hour}:${slotEnd.minute.toString().padLeft(2, "0")}"),
+                _buildFigmaRow(
+                  "Slot Pinjam",
+                  "Slot : ${slotStart.hour}:${slotStart.minute.toString().padLeft(2, "0")} - ${slotEnd.hour}:${slotEnd.minute.toString().padLeft(2, "0")}",
+                ),
 
                 _buildFigmaRow("Kode Pinjam", booking.bookCode),
 
@@ -122,7 +136,10 @@ class DetailPeminjamanAdmin extends StatelessWidget {
 
                 _buildFigmaRow("NIM", booking.bookNim),
                 _buildFigmaRow("Nama", booking.bookBy),
-                _buildFigmaRow("Jumlah Orang", booking.participantCount.toString()),
+                _buildFigmaRow(
+                  "Jumlah Orang",
+                  booking.participantCount.toString(),
+                ),
                 _buildFigmaRow("Tujuan", booking.bookPurpose),
 
                 if (booking.isConfirmed) ...[
@@ -133,8 +150,8 @@ class DetailPeminjamanAdmin extends StatelessWidget {
                   ),
                   const SizedBox(height: 15),
                   _buildFigmaRow(
-                    "Kehadiran", 
-                    booking.isPresent ? "Hadir" : "Tidak Hadir" 
+                    "Kehadiran",
+                    booking.isPresent ? "Hadir" : "Tidak Hadir",
                   ),
                 ],
 
@@ -148,11 +165,18 @@ class DetailPeminjamanAdmin extends StatelessWidget {
                         height: 50,
                         child: ElevatedButton(
                           onPressed: () async {
-                            await bookingService.setApproved(booking.id);
-                            if (context.mounted) Navigator.pop(context);
+                            showConfirmDialog(
+                              context: context,
+                              title:
+                                  "Apakah anda yakin menkonfirmasi peminjaman?",
+                              onYes: () async {
+                                await bookingService.setApproved(booking.id);
+                                if (context.mounted) Navigator.pop(context);
+                              },
+                            );
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green, 
+                            backgroundColor: Colors.green,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(30),
                             ),
@@ -161,9 +185,10 @@ class DetailPeminjamanAdmin extends StatelessWidget {
                           child: const Text(
                             "Konfirmasi",
                             style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16),
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
                           ),
                         ),
                       ),
@@ -173,8 +198,14 @@ class DetailPeminjamanAdmin extends StatelessWidget {
                         height: 50,
                         child: ElevatedButton(
                           onPressed: () async {
-                            await bookingService.setRejected(booking.id);
-                            if (context.mounted) Navigator.pop(context);
+                            showConfirmDialog(
+                              context: context,
+                              title: "Apakah anda yakin menolak peminjaman?",
+                              onYes: () async {
+                                await bookingService.setRejected(booking.id);
+                                if (context.mounted) Navigator.pop(context);
+                              },
+                            );
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.redAccent,
@@ -186,9 +217,10 @@ class DetailPeminjamanAdmin extends StatelessWidget {
                           child: const Text(
                             "Tolak",
                             style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16),
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
                           ),
                         ),
                       ),
@@ -211,7 +243,7 @@ class DetailPeminjamanAdmin extends StatelessWidget {
             width: 130,
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
             decoration: BoxDecoration(
-              color: const Color(0xFF7986CB), 
+              color: const Color(0xFF7986CB),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Text(
@@ -237,15 +269,126 @@ class DetailPeminjamanAdmin extends StatelessWidget {
               ),
               child: Text(
                 value,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.black87,
-                ),
+                style: const TextStyle(fontSize: 14, color: Colors.black87),
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Future<void> showConfirmDialog({
+    required BuildContext context,
+    required String title,
+    required VoidCallback onYes,
+  }) {
+    return showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 30),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 35),
+
+                Row(
+                  children: [
+                    // 🚨 Tombol Batal (Gradient)
+                    Expanded(
+                      child: SizedBox(
+                        height: 48,
+                        child: Ink(
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                              colors: [Color(0xFF7A73D1), Color(0xFFB5A8D5)],
+                            ),
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          child: ElevatedButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(15),
+                              ),
+                            ),
+                            child: const Text(
+                              "Batal",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 15),
+
+                    // 🔥 Tombol Ya (Gradient)
+                    Expanded(
+                      child: SizedBox(
+                        height: 48,
+                        child: Ink(
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                              colors: [Color(0xFF9087F5), Color(0xFFB5A8D5)],
+                            ),
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          child: ElevatedButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                              onYes();
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(15),
+                              ),
+                            ),
+                            child: const Text(
+                              "Ya",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
