@@ -69,7 +69,7 @@ class BookingService {
     required String nama,
     required String nim,
     required String tujuan,
-    required int participantCount, 
+    required int participantCount,
   }) async {
     final slotRef = _firestore.doc("Slots/${slot.id}");
     final userRef = _firestore.doc("Users/$userId");
@@ -92,8 +92,7 @@ class BookingService {
         .where("slot_start", isLessThan: nextDay)
         .get();
 
-    final nomorUrut =
-        (snapshot.docs.length + 1).toString().padLeft(4, '0');
+    final nomorUrut = (snapshot.docs.length + 1).toString().padLeft(4, '0');
 
     final tanggalFormat =
         "${dayStart.year}-${dayStart.month.toString().padLeft(2, '0')}-${dayStart.day.toString().padLeft(2, '0')}";
@@ -105,7 +104,7 @@ class BookingService {
       "book_nim": nim,
       "book_purpose": tujuan,
       "book_code": bookCode,
-      "participant_count": participantCount, 
+      "participant_count": participantCount,
 
       "slotId": slotRef,
       "user_id": userRef,
@@ -114,7 +113,7 @@ class BookingService {
       "slot_end": Timestamp.fromDate(slot.slotEnd),
 
       "is_confirmed": false,
-      "is_rejected": false, 
+      "is_rejected": false,
       "is_present": false,
 
       "createdAt": FieldValue.serverTimestamp(),
@@ -129,20 +128,24 @@ class BookingService {
     return _firestore
         .collection(_collectionName)
         .where("is_confirmed", isEqualTo: false)
-        .where("is_rejected", isEqualTo: false) 
+        .where("is_rejected", isEqualTo: false)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => BookingModel.fromFirestore(doc.id, doc.data()))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => BookingModel.fromFirestore(doc.id, doc.data()))
+              .toList(),
+        );
   }
 
   Stream<List<BookingModel>> getAllBookings() {
     return _firestore
         .collection(_collectionName)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => BookingModel.fromFirestore(doc.id, doc.data()))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => BookingModel.fromFirestore(doc.id, doc.data()))
+              .toList(),
+        );
   }
 
   Future<void> updateBookingStatus({
@@ -166,5 +169,69 @@ class BookingService {
       'is_confirmed': false,
       'is_rejected': true,
     });
+  }
+
+  // Hitung pengajuan yg belum di konfirmasi
+  Stream<int> getPendingBookingsCountWeekly() {
+    final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
+    return _firestore
+        .collection(_collectionName)
+        .where("is_confirmed", isEqualTo: false)
+        .where("is_rejected", isEqualTo: false)
+        .where("createdAt", isGreaterThanOrEqualTo: sevenDaysAgo)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
+  }
+
+  /// Hitung jumlah SEMUA Booking (dikonfirmasi, di rejected dan disetujui)
+  Stream<int> getAllBookingsCountWeekly() {
+    final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
+
+    return _firestore
+        .collection(_collectionName)
+        .where("createdAt", isGreaterThanOrEqualTo: sevenDaysAgo)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
+  }
+
+  //  LAB paling banyak dipinjam
+  Stream<Map<String, int>> getMostBorrowedLabWeekly() {
+    final today = DateTime.now();
+    final sevenDaysAgo = today.subtract(const Duration(days: 7));
+
+    return _firestore
+        .collection(_collectionName)
+        .where('is_confirmed', isEqualTo: true)
+        .orderBy('createdAt', descending: true)
+        .where('createdAt', isGreaterThan: sevenDaysAgo)
+        .snapshots()
+        .asyncMap((snapshot) async {
+          final Map<String, int> labCount = {};
+
+          for (var doc in snapshot.docs) {
+            final data = doc.data() as Map<String, dynamic>;
+
+            try {
+              final DocumentReference? slotRef =
+                  data['slotId'] as DocumentReference?;
+              if (slotRef != null) {
+                final slotDoc = await slotRef.get();
+                final slotData = slotDoc.data() as Map<String, dynamic>?;
+                if (slotData != null) {
+                  final DocumentReference? labRef =
+                      slotData['lab_ref'] as DocumentReference?;
+                  if (labRef != null) {
+                    final labId = labRef.id;
+                    labCount[labId] = (labCount[labId] ?? 0) + 1;
+                  }
+                }
+              }
+            } catch (e) {
+              print("Error processing booking document ${doc.id}: $e");
+              continue;
+            }
+          }
+          return labCount;
+        });
   }
 }
