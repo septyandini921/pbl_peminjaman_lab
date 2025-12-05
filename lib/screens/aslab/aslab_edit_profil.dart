@@ -33,20 +33,19 @@ class _AslabEditProfilScreenState extends State<AslabEditProfilScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F6FF),
-
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(60),
-        child: AppBar(
-          elevation: 0,
-          backgroundColor: const Color(0xFFD9D5EC),
-          centerTitle: true,
-          title: const Text(
-            "SIMPEL",
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 20,
-              color: Colors.black87,
-            ),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0.5,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
+        centerTitle: true,
+        title: const Text(
+          "Edit Profil",
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
           ),
         ),
       ),
@@ -55,10 +54,7 @@ class _AslabEditProfilScreenState extends State<AslabEditProfilScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            const Text("Edit Profil",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 20),
-
+            const SizedBox(height: 10),
             CircleAvatar(
               radius: 60,
               backgroundImage: AssetImage(
@@ -69,7 +65,6 @@ class _AslabEditProfilScreenState extends State<AslabEditProfilScreen> {
             ),
 
             const SizedBox(height: 20),
-
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -80,7 +75,6 @@ class _AslabEditProfilScreenState extends State<AslabEditProfilScreen> {
             ),
 
             const SizedBox(height: 30),
-
             Align(
               alignment: Alignment.centerLeft,
               child: const Text(
@@ -100,7 +94,6 @@ class _AslabEditProfilScreenState extends State<AslabEditProfilScreen> {
             ),
 
             const SizedBox(height: 15),
-
             Align(
               alignment: Alignment.centerLeft,
               child: const Text(
@@ -121,15 +114,17 @@ class _AslabEditProfilScreenState extends State<AslabEditProfilScreen> {
             ),
 
             const SizedBox(height: 30),
-
             SizedBox(
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF3C53CC),
+                  padding: EdgeInsets.zero,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30)),
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
                 ),
                 onPressed: () async {
                   String avatar = selectedAvatar == "female"
@@ -144,10 +139,31 @@ class _AslabEditProfilScreenState extends State<AslabEditProfilScreen> {
 
                   Navigator.pop(context);
                 },
-                child: const Text("Simpan Perubahan",
-                    style: TextStyle(fontSize: 16)),
+                child: Ink(
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [
+                        Color(0xFF4D55CC),
+                        Color(0xFF7A73D1),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  child: const Center(
+                    child: Text(
+                      "Simpan Perubahan",
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
               ),
-            )
+            ),
           ],
         ),
       ),
