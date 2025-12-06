@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../auth/auth_controller.dart';
 import '../student/home_screen.dart' as StudentHomeScreen;
+import '../auth/login_screen.dart'; // Fixed the import statement
 
 class RegisterStudentScreen extends StatefulWidget {
   const RegisterStudentScreen({super.key});
@@ -43,24 +44,30 @@ class _RegisterStudentScreenState extends State<RegisterStudentScreen> {
 
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Registrasi berhasil, silakan login")),
-    );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Registrasi berhasil, silakan login")),
+      );
 
-    Navigator.pop(context);
-
-  } catch (e) {
-    setState(() {
-      errorMessage = e.toString().contains('email-already-in-use')
-          ? "Email sudah terdaftar."
-          : "Registrasi Gagal: $e";
-    });
-  } finally {
-    if (mounted) setState(() => isLoading = false);
-  }
+      // Redirect to LoginScreen after successful registration
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+      );
+    } catch (e) {
+      setState(() {
+        errorMessage = e.toString().contains('email-already-in-use')
+            ? "Email sudah terdaftar."
+            : "Registrasi Gagal: $e";
+      });
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+    }
   }
   void navigateToLogin() {
-    Navigator.pop(context);
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+    );
   }
 
   @override
@@ -275,21 +282,20 @@ class _RegisterStudentScreenState extends State<RegisterStudentScreen> {
             Column(
               children: [
                 Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
                   child: Row(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.arrow_back,
-                            color: Colors.white, size: 28),
+                        icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
                         onPressed: () => Navigator.pop(context),
                       ),
                       const Text(
-                        "Kembali",
+                        "Back",
                         style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500),
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                        ),
                       )
                     ],
                   ),
@@ -342,10 +348,18 @@ class _RegisterStudentScreenState extends State<RegisterStudentScreen> {
                           ),
                           const SizedBox(height: 35),
                           _buildTextField(
-                              nameC, "Nama", "Masukkan Nama Lengkap", TextInputType.name),
+                            nameC,
+                            "Nama",
+                            "Masukkan Nama Lengkap",
+                            TextInputType.name,
+                          ),
                           const SizedBox(height: 18),
                           _buildTextField(
-                              emailC, "Email", "Masukkan Email", TextInputType.emailAddress),
+                            emailC,
+                            "Email",
+                            "Masukkan Email",
+                            TextInputType.emailAddress,
+                          ),
                           const SizedBox(height: 18),
                           _buildPasswordTextField(passC),
                           const SizedBox(height: 10),

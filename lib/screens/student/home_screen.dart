@@ -5,7 +5,7 @@ import '../../../service/lab_service.dart';
 import '../../../models/labs/lab_model.dart';
 import '../../widgets/student_bottom_navbar.dart';
 import 'booking_screen.dart';
-
+import '../../widgets/app_bar.dart';
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -60,17 +60,20 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final labService = LabService();
     final userName = getCurrentUserEmail().split('@').first;
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Beranda Mahasiswa'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () => _logout(context),
-          ),
-        ],
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(110),
+        child: CustomAppBar(
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.logout, color: Colors.white),
+              onPressed: () => _logout(context),
+            ),
+          ],
+        ),
       ),
-      bottomNavigationBar: const BottomNavBar(currentIndex: 0),
+
       body: CustomScrollView(
         slivers: [
           SliverList(
@@ -107,37 +110,37 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(10),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withOpacity(0.1),
-                            spreadRadius: 1,
-                            blurRadius: 5,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Text(
-                            'Halo $userName 👋',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const Text(
-                            'Selamat Datang di Sistem Informasi Peminjaman Lab!',
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                     const Text(
                       "Daftar Lab Tersedia",
                       style: TextStyle(
@@ -145,6 +148,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),
@@ -196,7 +200,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => PeminjamanScreen(lab: lab), 
+                                builder: (_) => PeminjamanScreen(lab: lab),
                               ),
                             );
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -238,6 +242,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                           fontWeight: FontWeight.bold,
                                           fontSize: 16,
                                         ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                       const Text(
                                         "Ketuk untuk melihat detail peminjaman",
@@ -268,6 +274,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+      bottomNavigationBar: const BottomNavBar(currentIndex: 0), 
     );
   }
 }
