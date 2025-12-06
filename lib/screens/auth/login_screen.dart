@@ -209,9 +209,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         if (_errorMessage != null) _buildErrorMessage(),
                         if (_errorMessage != null) const SizedBox(height: 16),
 
-                        _buildRememberMeAndForgotPassword(),
-                        const SizedBox(height: 40),
-
                         _buildSignInButton(),
 
                         const SizedBox(height: 24),
@@ -331,58 +328,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildRememberMeAndForgotPassword() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        // Remember me
-        Row(
-          children: [
-            GestureDetector(
-              onTap: () {
-                setState(() {
-                  _rememberMe = !_rememberMe;
-                });
-              },
-              child: Container(
-                width: 18,
-                height: 18,
-                decoration: BoxDecoration(
-                  color: _rememberMe ? _primaryColor : Colors.white,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: _rememberMe ? _primaryColor : Colors.grey[400]!,
-                  ),
-                ),
-                child: _rememberMe
-                    ? const Icon(Icons.check, size: 12, color: Colors.white)
-                    : null,
-              ),
-            ),
-            const SizedBox(width: 6),
-            const Text(
-              'Remember me',
-              style: TextStyle(fontSize: 12, color: _primaryColor),
-            ),
-          ],
-        ),
-
-        // Forgot Password
-        GestureDetector(
-          onTap: () {
-          },
-          child: const Text(
-            'Forgot Password?',
-            style: TextStyle(
-              fontSize: 12,
-              color: _primaryColor,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 
   Widget _buildSignInButton() {
     if (_isLoading) {
