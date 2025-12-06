@@ -3,6 +3,7 @@ import '../screens/admin/home_screen.dart';
 import '../screens/admin/kelola_lab.dart';
 import '../screens/admin/profil_admin.dart';
 import '../screens/admin/permintaan_peminjaman.dart';
+import '../screens/admin/kelola_user.dart';
 
 class BottomNavBar extends StatelessWidget {
   final int currentIndex;
@@ -49,7 +50,18 @@ class BottomNavBar extends StatelessWidget {
         );
         break;
 
-      case 3:
+      case  3:
+      Navigator.pushReplacement(
+          context,
+          PageRouteBuilder(
+            pageBuilder: (_, __, ___) => const KelolaUserScreen(),
+            transitionDuration: Duration.zero,
+            reverseTransitionDuration: Duration.zero,
+          ),
+        );
+        break;
+
+      case 4:
         Navigator.pushReplacement(
           context,
           PageRouteBuilder(
@@ -86,6 +98,10 @@ class BottomNavBar extends StatelessWidget {
         BottomNavigationBarItem(
           icon: Icon(Icons.science), // Ikon untuk kelola lab
           label: "Kelola Lab", // Label untuk halaman kelola lab
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.manage_accounts), // Ikon untuk kelola lab
+          label: "Kelola User", // Label untuk halaman kelola lab
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.person), // Ikon untuk profil
