@@ -161,8 +161,28 @@ class DetailPeminjamanAslab extends StatelessWidget {
                       onPressed: booking.isPresent
                           ? null
                           : () async {
-                              await bookingService.setPresent(booking.id);
-                              if (context.mounted) Navigator.pop(context);
+                              bool? confirm = await showDialog<bool>(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text('Konfirmasi'),
+                                  content: const Text(
+                                      'Apakah anda yakin akan mengonfirmasi status kehadiran sebagai Hadir?'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.of(context).pop(false),
+                                      child: const Text('Batal'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () => Navigator.of(context).pop(true),
+                                      child: const Text('Ya'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (confirm == true) {
+                                await bookingService.setPresent(booking.id);
+                                if (context.mounted) Navigator.pop(context);
+                              }
                             },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
@@ -174,37 +194,6 @@ class DetailPeminjamanAslab extends StatelessWidget {
                       ),
                       child: const Text(
                         "Hadir",
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 15),
-
-                  // Tombol Tidak Hadir
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: !booking.isPresent
-                          ? null
-                          : () async {
-                              await bookingService.setNotPresent(booking.id);
-                              if (context.mounted) Navigator.pop(context);
-                            },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.redAccent,
-                        disabledBackgroundColor: Colors.grey,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: const Text(
-                        "Tidak Hadir",
                         style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
