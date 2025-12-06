@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pbl_peminjaman_lab/service/lab_service.dart';
 import '../../widgets/app_bar.dart';
 import '../../service/booking_service.dart';
-import 'permintaan_peminjaman.dart';
-import 'kelola_lab.dart';
-import 'profil_admin.dart';
+import '../../widgets/admin_bottom_navbar.dart';
 import '../../service/slot_service.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -20,72 +18,14 @@ class _HomeScreenState extends State<HomeScreen> {
   final SlotService _slotService = SlotService();
   final LabService _labService = LabService();
 
-  Widget _navItem(IconData icon, String label, int index) {
-    bool active = currentIndex == index;
-
-    return InkWell(
-      onTap: () {
-        if (currentIndex == index) return;
-        setState(() => currentIndex = index);
-
-        switch (index) {
-          case 1:
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const PermintaanPeminjamanScreen(),
-              ),
-            );
-            break;
-          case 2:
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => const KelolaLabScreen()),
-            );
-            break;
-          case 3:
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => const ProfilAdminScreen()),
-            );
-            break;
-        }
-      },
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: active ? Colors.white : Colors.white70, size: 28),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: active ? Colors.white : Colors.white70,
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: const CustomAppBar(actions: []),
-      bottomNavigationBar: Container(
-        color: const Color(0xFF4D55CC),
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _navItem(Icons.home, "Home", 0),
-            _navItem(Icons.list, "List", 1),
-            _navItem(Icons.science, "Kelola Lab", 2),
-            _navItem(Icons.person, "Profile", 3),
-          ],
-        ),
-      ),
+
+      // ✅ BOTTOM NAVBAR BARU (import dari widgets)
+      bottomNavigationBar: const BottomNavBar(currentIndex: 0),
 
       body: _buildBody(),
     );
@@ -133,7 +73,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Satistik simpel
   Widget _statistikSimpel() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -159,7 +98,6 @@ class _HomeScreenState extends State<HomeScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              // Jumlah peminjaman yang belum di konfirmasi
               StreamBuilder<int>(
                 stream: _bookingService.getPendingBookingsCountWeekly(),
                 builder: (context, snapshot) {
@@ -167,7 +105,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   return _statBox(value, "Pengajuan");
                 },
               ),
-              // Jumlah semua peminjaman
               StreamBuilder<int>(
                 stream: _bookingService.getAllBookingsCountWeekly(),
                 builder: (context, snapshot) {
@@ -178,8 +115,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
           const SizedBox(height: 20),
-
-          // SLot terpakai
           StreamBuilder<int>(
             stream: _slotService.getTotalUsedSlotsWeekly(),
             initialData: 0,
@@ -201,7 +136,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     const Icon(Icons.show_chart, size: 28),
                     const SizedBox(width: 10),
                     Text(
-                      "${usedCount} Slot Terpakai",
+                      "$usedCount Slot Terpakai",
                       style: const TextStyle(fontSize: 16),
                     ),
                   ],
@@ -221,17 +156,18 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context, snapshot) {
         String labName = "N/A";
         int totalPeminjaman = 0;
+
         if (snapshot.connectionState == ConnectionState.waiting) {
           labName = "Memuat...";
-          totalPeminjaman = 0;
         } else if (snapshot.hasError) {
           labName = "Error Data";
-          totalPeminjaman = 0;
         } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
           final sortedLabs = snapshot.data!.entries.toList()
             ..sort((a, b) => b.value.compareTo(a.value));
+
           final mostUsedLabId = sortedLabs.first.key;
           totalPeminjaman = sortedLabs.first.value;
+
           return FutureBuilder<String>(
             future: _labService.getLabNameById(mostUsedLabId),
             builder: (context, nameSnapshot) {
@@ -239,10 +175,8 @@ class _HomeScreenState extends State<HomeScreen> {
               return _buildStyledLabDisplay(labName, totalPeminjaman);
             },
           );
-        } else {
-          labName = "Belum Ada Peminjaman";
-          totalPeminjaman = 0;
         }
+
         return _buildStyledLabDisplay(labName, totalPeminjaman);
       },
     );
