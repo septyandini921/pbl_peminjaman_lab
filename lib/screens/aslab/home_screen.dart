@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../../auth/auth_controller.dart';
-import '../auth/login_screen.dart';
-import '../../widgets/aslab_bottom_navbar.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../widgets/app_bar.dart';
+import '../../service/booking_service.dart';
+import '../../widgets/aslab_bottom_navbar.dart';
+import '../../service/slot_service.dart';
+import '../../service/lab_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,13 +15,11 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  Future<void> _logout(BuildContext context) async {
-    await AuthController.instance.signOut();
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-    );
-  }
+  int currentIndex = 0;
+  final BookingService _bookingService = BookingService();
+  final SlotService _slotService = SlotService();
+  final LabService _labService = LabService();
+  String userName = "Pengguna";
 
   @override
   Widget build(BuildContext context) {
@@ -29,6 +30,25 @@ class _HomeScreenState extends State<HomeScreen> {
       body: _buildBody(),
     );
   }
+@override
+void initState() {
+  super.initState();
+  _loadUserName();
+}
+
+Future<void> _loadUserName() async {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user != null) {
+    final snapshot = await FirebaseFirestore.instance
+        .collection("Users")
+        .doc(user.uid)
+        .get();
+
+    setState(() {
+      userName = snapshot.data()?["user_name"] ?? "Pengguna"; // ← S IMPAN DI STATE
+    });
+  }
+}
 
   Widget _buildBody() {
     return SingleChildScrollView(
@@ -54,29 +74,17 @@ class _HomeScreenState extends State<HomeScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 8,
-            offset: Offset(0, 4),
-          ),
+          BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4)),
         ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: const [
-          SizedBox(
-            child: Image(
-              image: AssetImage("assets/icons/bot.png"),
-              width: 55,
-            ),
-          ),
-          SizedBox(width: 12),
-          Text(
-            "Selamat datang Aslab",
-            style: TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
-            ),
+        children: [
+          Image.asset("assets/icons/bot.png", width: 55),
+          const SizedBox(width: 12),
+           Text(
+            "Selamat Datang $userName",
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -88,10 +96,7 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [
-            Color(0xFF4D55CC),
-            Color(0xFF38339C),
-          ],
+          colors: [Color(0xFF4D55CC), Color(0xFF38339C)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -100,7 +105,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         children: [
           const Text(
-            "Statistik Aslab Minggu Ini",
+            "Statistik SIMPEL Minggu Ini",
             style: TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
@@ -108,49 +113,97 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(height: 20),
-
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _statBox("12", "Konfirmasi Hadir"),
-              _statBox("6", "Peminjaman Dibantu"),
+              StreamBuilder<int>(
+                stream: _bookingService.getPendingBookingsCountWeekly(),
+                builder: (context, snapshot) {
+                  final value = snapshot.data?.toString() ?? "0";
+                  return _statBox(value, "Pengajuan");
+                },
+              ),
+              StreamBuilder<int>(
+                stream: _bookingService.getAllBookingsCountWeekly(),
+                builder: (context, snapshot) {
+                  final value = snapshot.data?.toString() ?? "0";
+                  return _statBox(value, "Peminjaman");
+                },
+              ),
             ],
           ),
-
           const SizedBox(height: 20),
-
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 10),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
-                Icon(Icons.show_chart, size: 28),
-                SizedBox(width: 10),
-                Text(
-                  "80% Tugas Selesai",
-                  style: TextStyle(fontSize: 16),
+          StreamBuilder<int>(
+            stream: _slotService.getTotalUsedSlotsWeekly(),
+            initialData: 0,
+            builder: (context, usedSnapshot) {
+              final usedCount = usedSnapshot.data ?? 0;
+              return Container(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 18,
+                  horizontal: 10,
                 ),
-              ],
-            ),
-          )
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.show_chart, size: 28),
+                    const SizedBox(width: 10),
+                    Text(
+                      "$usedCount Slot Terpakai",
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         ],
       ),
     );
   }
 
   Widget _labPalingDipinjam() {
+    return StreamBuilder<Map<String, int>>(
+      stream: _bookingService.getMostBorrowedLabWeekly(),
+      initialData: const {},
+      builder: (context, snapshot) {
+        String labName = "N/A";
+        int totalPeminjaman = 0;
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          labName = "Memuat...";
+        } else if (snapshot.hasError) {
+          labName = "Error Data";
+        } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+          final sortedLabs = snapshot.data!.entries.toList()
+            ..sort((a, b) => b.value.compareTo(a.value));
+
+          final mostUsedLabId = sortedLabs.first.key;
+          totalPeminjaman = sortedLabs.first.value;
+
+          return FutureBuilder<String>(
+            future: _labService.getLabNameById(mostUsedLabId),
+            builder: (context, nameSnapshot) {
+              labName = nameSnapshot.data ?? 'Memuat Nama...';
+              return _buildStyledLabDisplay(labName, totalPeminjaman);
+            },
+          );
+        }
+
+        return _buildStyledLabDisplay(labName, totalPeminjaman);
+      },
+    );
+  }
+
+  Widget _buildStyledLabDisplay(String labName, int totalPeminjaman) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [
-            Color(0xFF4D55CC),
-            Color(0xFF38339C),
-          ],
+          colors: [Color(0xFF4D55CC), Color(0xFF38339C)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -175,13 +228,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   Image.asset("assets/icons/lab_icon.png", width: 45),
                   const SizedBox(height: 6),
-                  const Text(
-                    "Lab MMT Lt 8B",
-                    style: TextStyle(color: Colors.white),
+                  SizedBox(
+                    width: 100,
+                    child: Text(
+                      labName,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.white),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
+                    ),
                   ),
                 ],
               ),
-              _statBox("10", "Peminjaman"),
+              _statBox(totalPeminjaman.toString(), "Peminjaman"),
             ],
           ),
         ],
@@ -200,10 +259,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Text(
             value,
-            style: const TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
           ),
           Text(label, style: const TextStyle(fontSize: 13)),
         ],
