@@ -12,6 +12,7 @@ class BookingModel {
   final bool isPresent;
   final DocumentReference? slotRef;
   final DocumentReference? userRef;
+  final DateTime? createdAt;
 
   BookingModel({
     required this.id,
@@ -25,6 +26,7 @@ class BookingModel {
     required this.isPresent,
     required this.slotRef,
     required this.userRef,
+    this.createdAt,
   });
 
   factory BookingModel.fromFirestore(String id, Map<String, dynamic> data) {
@@ -40,6 +42,7 @@ class BookingModel {
       isPresent: data['is_present'] ?? false,
       slotRef: data['slotId'],
       userRef: data['user_id'],
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
     );
   }
 
@@ -55,6 +58,7 @@ class BookingModel {
       'is_present': isPresent,
       'slotId': slotRef,
       'user_id': userRef,
+      'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : FieldValue.serverTimestamp(),
     };
   }
 }

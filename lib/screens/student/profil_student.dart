@@ -9,6 +9,7 @@ import '../../widgets/student_bottom_navbar.dart';
 import '../../widgets/app_bar.dart';
 import 'student_edit_profil.dart';
 import 'detail_peminjaman_student.dart'; 
+import '../auth/login_screen.dart';
 
 class ProfilStudent extends StatefulWidget {
   const ProfilStudent({super.key});
@@ -45,6 +46,15 @@ class _ProfilStudentState extends State<ProfilStudent> {
     await loadUser();
   }
 
+  Future<void> _logout() async {
+    await FirebaseAuth.instance.signOut();
+    if (!mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -53,7 +63,9 @@ class _ProfilStudentState extends State<ProfilStudent> {
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),
-            onPressed: () {},
+            onPressed: () {
+              // Optional: tambahkan fungsi setting
+            },
           )
         ],
       ),
@@ -117,6 +129,46 @@ class _ProfilStudentState extends State<ProfilStudent> {
                   ),
 
                   const SizedBox(height: 30),
+
+                  // Tombol Logout dengan gradasi mirip admin
+                  SizedBox(
+                    width: double.infinity,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [
+                            Color(0xFF4D55CC),
+                            Color(0xFF7A73D1),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: _logout,
+                        child: const Text(
+                          "Logout",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 30),
+
                   const Text(
                     "Riwayat Booking",
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -134,7 +186,20 @@ class _ProfilStudentState extends State<ProfilStudent> {
                         }
 
                         if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                          return _emptyState();
+                          return Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.history,
+                                    size: 50, color: Colors.grey.shade300),
+                                const SizedBox(height: 10),
+                                Text(
+                                  "Belum ada riwayat booking",
+                                  style: TextStyle(color: Colors.grey.shade500),
+                                ),
+                              ],
+                            ),
+                          );
                         }
 
                         final myBookings = snapshot.data!.where((b) {
@@ -142,7 +207,20 @@ class _ProfilStudentState extends State<ProfilStudent> {
                         }).toList();
 
                         if (myBookings.isEmpty) {
-                          return _emptyState();
+                          return Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.history,
+                                    size: 50, color: Colors.grey.shade300),
+                                const SizedBox(height: 10),
+                                Text(
+                                  "Belum ada riwayat booking",
+                                  style: TextStyle(color: Colors.grey.shade500),
+                                ),
+                              ],
+                            ),
+                          );
                         }
 
                         return ListView.builder(
@@ -159,23 +237,7 @@ class _ProfilStudentState extends State<ProfilStudent> {
                 ],
               ),
             ),
-      bottomNavigationBar: const BottomNavBar(currentIndex: 3),
-    );
-  }
-
-  Widget _emptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.history, size: 50, color: Colors.grey.shade300),
-          const SizedBox(height: 10),
-          Text(
-            "Belum ada riwayat booking",
-            style: TextStyle(color: Colors.grey.shade500),
-          ),
-        ],
-      ),
+      bottomNavigationBar: const BottomNavBar(currentIndex: 2),
     );
   }
 
@@ -183,7 +245,7 @@ class _ProfilStudentState extends State<ProfilStudent> {
     return FutureBuilder<DocumentSnapshot>(
       future: FirebaseFirestore.instance.doc(booking.slotRef!.path).get(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const SizedBox(); 
+        if (!snapshot.hasData) return const SizedBox();
 
         final slot = snapshot.data!;
         final slotStart = (slot["slot_start"] as Timestamp).toDate();
@@ -196,7 +258,7 @@ class _ProfilStudentState extends State<ProfilStudent> {
         if (booking.isRejected) {
           statusLabel = "Ditolak";
           statusColor = Colors.red;
-          cardColor = const Color(0xFFFFF5F5); 
+          cardColor = const Color(0xFFFFF5F5);
         } else if (booking.isConfirmed) {
           statusLabel = "Disetujui";
           statusColor = Colors.green;
@@ -208,8 +270,8 @@ class _ProfilStudentState extends State<ProfilStudent> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => DetailPeminjamanStudent(booking: booking),
-              ),
+                  builder: (context) =>
+                      DetailPeminjamanStudent(booking: booking)),
             );
           },
           child: Container(
@@ -235,8 +297,7 @@ class _ProfilStudentState extends State<ProfilStudent> {
                     color: Colors.blue.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.calendar_today,
-                      color: Color(0xFF4D55CC)),
+                  child: const Icon(Icons.calendar_today, color: Color(0xFF4D55CC)),
                 ),
                 const SizedBox(width: 15),
                 Expanded(
@@ -253,13 +314,11 @@ class _ProfilStudentState extends State<ProfilStudent> {
                       const SizedBox(height: 4),
                       Text(
                         "${slotStart.day}-${slotStart.month}-${slotStart.year}  •  ${slotStart.hour}:${slotStart.minute.toString().padLeft(2, '0')} - ${slotEnd.hour}:${slotEnd.minute.toString().padLeft(2, '0')}",
-                        style: TextStyle(
-                            fontSize: 12, color: Colors.grey.shade600),
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                       ),
                       const SizedBox(height: 6),
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
                           color: statusColor.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(4),
@@ -276,8 +335,7 @@ class _ProfilStudentState extends State<ProfilStudent> {
                     ],
                   ),
                 ),
-                const Icon(Icons.arrow_forward_ios,
-                    size: 16, color: Colors.grey),
+                const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
               ],
             ),
           ),

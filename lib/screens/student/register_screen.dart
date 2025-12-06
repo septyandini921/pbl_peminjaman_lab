@@ -35,14 +35,14 @@ class _RegisterStudentScreenState extends State<RegisterStudentScreen> {
     });
 
     try {
-      await AuthController.instance.register(
-        nameC.text.trim(),
-        emailC.text.trim(),
-        passC.text.trim(),
-        0,
-      );
+    await AuthController.instance.register(
+      nameC.text.trim(),
+      emailC.text.trim(),
+      passC.text.trim(),
+      0,
+    );
 
-      if (!mounted) return;
+    if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Registrasi berhasil, silakan login")),
@@ -63,7 +63,6 @@ class _RegisterStudentScreenState extends State<RegisterStudentScreen> {
       if (mounted) setState(() => isLoading = false);
     }
   }
-
   void navigateToLogin() {
     Navigator.pushReplacement(
       context,

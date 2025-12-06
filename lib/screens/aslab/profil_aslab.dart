@@ -5,6 +5,8 @@ import '../../models/user/user_model.dart';
 import '../../widgets/aslab_bottom_navbar.dart';
 import '../../widgets/app_bar.dart';
 import 'aslab_edit_profil.dart';
+import '../../auth/auth_controller.dart';
+import '../auth/login_screen.dart';
 
 class ProfilAslabScreen extends StatefulWidget {
   const ProfilAslabScreen({super.key});
@@ -40,6 +42,14 @@ class _ProfilAslabScreenState extends State<ProfilAslabScreen> {
     await loadUser();
   }
 
+  Future<void> _logout(BuildContext context) async {
+    await AuthController.instance.signOut();
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -66,7 +76,6 @@ class _ProfilAslabScreenState extends State<ProfilAslabScreen> {
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 20),
-
                   GestureDetector(
                     onTap: goToEdit,
                     child: Container(
@@ -110,12 +119,69 @@ class _ProfilAslabScreenState extends State<ProfilAslabScreen> {
                             ),
                           ),
 
-                          GestureDetector(
-                            onTap: goToEdit,
-                            child: const Icon(Icons.edit,
-                                size: 22, color: Colors.grey),
-                          ),
+                          const Icon(Icons.edit,
+                              size: 22, color: Colors.grey),
                         ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+
+                  ElevatedButton(
+                    onPressed: () async {
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text("Logout"),
+                          content:
+                              const Text("Apakah Anda yakin ingin keluar?"),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text("Tidak"),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              child: const Text("Ya"),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirm == true) {
+                        _logout(context);
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                    ),
+                    child: Ink(
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [
+                            Color(0xFF4D55CC),
+                            Color(0xFF7A73D1),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Container(
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        child: const Text(
+                          "Logout",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ),
                   ),
