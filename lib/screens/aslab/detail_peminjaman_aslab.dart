@@ -19,7 +19,10 @@ class DetailPeminjamanAslab extends StatelessWidget {
         title: const Text(
           "SIMPEL",
           style: TextStyle(
-              color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+            color: Colors.white,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         backgroundColor: const Color(0xFF4D55CC),
         centerTitle: true,
@@ -82,11 +85,15 @@ class DetailPeminjamanAslab extends StatelessWidget {
                 RichText(
                   text: TextSpan(
                     style: const TextStyle(
-                        fontSize: 18, color: Colors.black, fontFamily: 'Roboto'),
+                      fontSize: 18,
+                      color: Colors.black,
+                      fontFamily: 'Roboto',
+                    ),
                     children: [
                       const TextSpan(
-                          text: "Peminjaman ",
-                          style: TextStyle(fontWeight: FontWeight.bold)),
+                        text: "Peminjaman ",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
                       TextSpan(text: booking.bookCode),
                     ],
                   ),
@@ -133,67 +140,81 @@ class DetailPeminjamanAslab extends StatelessWidget {
                   ),
                   const SizedBox(height: 15),
                   _buildFigmaRow(
-                    "Kehadiran", 
-                    booking.isPresent ? "Hadir" : "Tidak Hadir" 
+                    "Kehadiran",
+                    booking.isPresent ? "Hadir" : "Tidak Hadir",
+                  ),
+                ],
+
+                const SizedBox(height: 30),
+                if (booking.isConfirmed) ...[
+                  const Text(
+                    "Konfirmasi Kehadiran",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 15),
+
+                  // Tombol Hadir
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: booking.isPresent
+                          ? null
+                          : () async {
+                              await bookingService.setPresent(booking.id);
+                              if (context.mounted) Navigator.pop(context);
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        disabledBackgroundColor: Colors.grey,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        "Hadir",
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 15),
+
+                  // Tombol Tidak Hadir
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: !booking.isPresent
+                          ? null
+                          : () async {
+                              await bookingService.setNotPresent(booking.id);
+                              if (context.mounted) Navigator.pop(context);
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.redAccent,
+                        disabledBackgroundColor: Colors.grey,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        "Tidak Hadir",
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16),
+                      ),
+                    ),
                   ),
                 ],
 
                 const SizedBox(height: 40),
-
-                if (showButtons)
-                  Column(
-                    children: [
-                      SizedBox(
-                        width: double.infinity,
-                        height: 50,
-                        child: ElevatedButton(
-                          onPressed: () async {
-                            await bookingService.setApproved(booking.id);
-                            if (context.mounted) Navigator.pop(context);
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green, 
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                            elevation: 0,
-                          ),
-                          child: const Text(
-                            "Konfirmasi",
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 15),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 50,
-                        child: ElevatedButton(
-                          onPressed: () async {
-                            await bookingService.setRejected(booking.id);
-                            if (context.mounted) Navigator.pop(context);
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.redAccent,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                            elevation: 0,
-                          ),
-                          child: const Text(
-                            "Tolak",
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
               ],
             ),
           );
@@ -201,7 +222,8 @@ class DetailPeminjamanAslab extends StatelessWidget {
       ),
     );
   }
- Widget _buildFigmaRow(String label, String value) {
+
+  Widget _buildFigmaRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
       child: Row(
@@ -210,7 +232,7 @@ class DetailPeminjamanAslab extends StatelessWidget {
             width: 130,
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
             decoration: BoxDecoration(
-              color: const Color(0xFF7986CB), 
+              color: const Color(0xFF7986CB),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Text(
@@ -223,9 +245,7 @@ class DetailPeminjamanAslab extends StatelessWidget {
               ),
             ),
           ),
-
           const SizedBox(width: 10),
-
           Expanded(
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 15),

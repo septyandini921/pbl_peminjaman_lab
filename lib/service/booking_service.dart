@@ -234,4 +234,25 @@ class BookingService {
           return labCount;
         });
   }
+
+  Stream<List<BookingModel>> getAllConfirmedBookings() {
+  return _firestore
+      .collection("Booking")
+      .where("is_confirmed", isEqualTo: true)
+      .snapshots()
+      .map((snap) => snap.docs
+          .map((d) => BookingModel.fromFirestore(d.id, d.data()))
+          .toList());
+}
+
+Future<void> setPresent(String bookingId) async {
+  await _firestore.collection(_collectionName).doc(bookingId).update({
+    'is_present': true,
+  });
+}
+Future<void> setNotPresent(String bookingId) async {
+  await _firestore.collection(_collectionName).doc(bookingId).update({
+    'is_present': false,
+  });
+}
 }

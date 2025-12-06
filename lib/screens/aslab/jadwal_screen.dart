@@ -4,6 +4,7 @@ import '../../widgets/aslab_bottom_navbar.dart';
 import '../../models/booking/booking_model.dart';
 import '../../service/booking_service.dart';
 import 'detail_peminjaman_aslab.dart';
+
 class JadwalScreen extends StatefulWidget {
   const JadwalScreen({super.key});
 
@@ -13,7 +14,6 @@ class JadwalScreen extends StatefulWidget {
 
 class _JadwalScreenState extends State<JadwalScreen> {
   DateTime? selectedDate;
-  String selectedStatus = "Pending";
 
   Widget _customHeader() {
     return Container(
@@ -59,74 +59,43 @@ class _JadwalScreenState extends State<JadwalScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () async {
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate: DateTime.now(),
-                        firstDate: DateTime(2020),
-                        lastDate: DateTime(2030),
-                      );
-                      if (picked != null) {
-                        setState(() => selectedDate = picked);
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.grey.shade300),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.date_range, size: 20),
-                          const SizedBox(width: 8),
-                          Text(
-                            selectedDate == null
-                                ? "Pilih tanggal"
-                                : "${selectedDate!.day}-${selectedDate!.month}-${selectedDate!.year}",
-                          ),
-                        ],
-                      ),
+            child: GestureDetector(
+              onTap: () async {
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: DateTime.now(),
+                  firstDate: DateTime(2020),
+                  lastDate: DateTime(2030),
+                );
+                if (picked != null) {
+                  setState(() => selectedDate = picked);
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.date_range, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      selectedDate == null
+                          ? "Pilih tanggal"
+                          : "${selectedDate!.day}-${selectedDate!.month}-${selectedDate!.year}",
                     ),
-                  ),
+                  ],
                 ),
-
-                const SizedBox(width: 12),
-
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey.shade300),
-                  ),
-                  child: DropdownButton<String>(
-                    value: selectedStatus,
-                    underline: const SizedBox(),
-                    items: const [
-                      DropdownMenuItem(value: "Pending", child: Text("Pending")),
-                      DropdownMenuItem(value: "Active", child: Text("Active")),
-                      DropdownMenuItem(value: "Done", child: Text("Done")),
-                    ],
-                    onChanged: (v) {
-                      if (v != null) {
-                        setState(() => selectedStatus = v);
-                      }
-                    },
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
 
           Expanded(
             child: StreamBuilder<List<BookingModel>>(
-              stream: bookingService.getAllBookings(),
+              stream: bookingService.getAllConfirmedBookings(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
@@ -134,19 +103,6 @@ class _JadwalScreenState extends State<JadwalScreen> {
 
                 final allBookings = snapshot.data ?? [];
                 final filtered = allBookings.where((b) {
-
-                  if (selectedStatus == "Pending") {
-                    if (b.isConfirmed || b.isRejected) return false;
-                  }
-
-                  if (selectedStatus == "Confirmed") {
-                    if (!b.isConfirmed) return false;
-                  }
-
-                  if (selectedStatus == "Rejected") {
-                    if (!b.isRejected) return false;
-                  }
-
                   if (selectedDate != null) {
                     final dateString =
                         "${selectedDate!.year}-${selectedDate!.month.toString().padLeft(2, '0')}-${selectedDate!.day.toString().padLeft(2, '0')}";
@@ -177,18 +133,14 @@ class _JadwalScreenState extends State<JadwalScreen> {
                         FirebaseFirestore.instance.doc(b.slotRef!.path).get(),
                         FirebaseFirestore.instance.doc(b.userRef!.path).get(),
                       ]),
-                      builder: (context,
-                          AsyncSnapshot<List<DocumentSnapshot>> snap2) {
-                        if (!snap2.hasData) {
-                          return const SizedBox();
-                        }
+                      builder: (context, AsyncSnapshot<List<DocumentSnapshot>> snap2) {
+                        if (!snap2.hasData) return const SizedBox();
 
                         final slot = snap2.data![0];
-
-                        final slotStart =
-                            (slot["slot_start"] as Timestamp).toDate();
-                        final slotEnd =
-                            (slot["slot_end"] as Timestamp).toDate();
+                        final slotStart = (slot["slot_start"] as Timestamp)
+                            .toDate();
+                        final slotEnd = (slot["slot_end"] as Timestamp)
+                            .toDate();
 
                         return InkWell(
                           onTap: () {
@@ -218,38 +170,52 @@ class _JadwalScreenState extends State<JadwalScreen> {
                                       fontSize: 16,
                                     ),
                                   ),
-
                                   const SizedBox(height: 8),
-
                                   Text(
                                     "Peminjam: ${b.bookBy} (${b.bookNim})",
                                     style: const TextStyle(fontSize: 14),
                                   ),
-
                                   const SizedBox(height: 8),
-
                                   Text(
                                     "Waktu: ${slotStart.hour}:${slotStart.minute.toString().padLeft(2, '0')} "
                                     "- ${slotEnd.hour}:${slotEnd.minute.toString().padLeft(2, '0')}",
                                     style: const TextStyle(fontSize: 14),
                                   ),
-
                                   const SizedBox(height: 8),
 
+                                  // STATUS KONFIRMASI (Tetap ada)
                                   Text(
                                     b.isRejected
                                         ? "Status: Ditolak"
                                         : b.isConfirmed
-                                            ? "Status: Sudah dikonfirmasi"
-                                            : "Status: Menunggu konfirmasi",
+                                        ? "Status: Sudah dikonfirmasi"
+                                        : "Status: Menunggu konfirmasi",
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.bold,
                                       color: b.isRejected
                                           ? Colors.red
                                           : b.isConfirmed
-                                              ? Colors.green
-                                              : Colors.orange,
+                                          ? Colors.green
+                                          : Colors.orange,
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    b.isPresent == null
+                                        ? "Kehadiran: Belum dikonfirmasi"
+                                        : b.isPresent == true
+                                        ? "Kehadiran: Hadir"
+                                        : "Kehadiran: Tidak Hadir",
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: b.isPresent == null
+                                          ? Colors.orange
+                                          : b.isPresent == true
+                                          ? Colors.green
+                                          : Colors.red,
                                     ),
                                   ),
                                 ],
