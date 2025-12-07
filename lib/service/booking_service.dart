@@ -1,4 +1,3 @@
-//C:\Kuliah\semester5\Moblie\PBL\pbl_peminjaman_lab\lib\service\booking_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/labs/lab_model.dart';
 import '../models/slots/slot_model.dart';
@@ -63,6 +62,7 @@ class BookingService {
         .toList();
   }
 
+  // Create booking (tanpa update slot, akan dihandle di screen)
   Future<String> createBooking({
     required LabModel lab,
     required SlotModel slot,
@@ -72,57 +72,61 @@ class BookingService {
     required String tujuan,
     required int participantCount,
   }) async {
-    final slotRef = _firestore.doc("Slots/${slot.id}");
-    final userRef = _firestore.doc("Users/$userId");
+    try {
+      final slotRef = _firestore.doc("Slots/${slot.id}");
+      final userRef = _firestore.doc("Users/$userId");
 
-    final slotDoc = await slotRef.get();
-    if (slotDoc.exists && slotDoc["is_booked"] == true) {
-      return "SLOT_TIDAK_TERSEDIA";
+      // Double check slot masih available
+      final slotDoc = await slotRef.get();
+      if (slotDoc.exists && slotDoc["is_booked"] == true) {
+        return "SLOT_TIDAK_TERSEDIA";
+      }
+
+      final dayStart = DateTime(
+        slot.slotStart.year,
+        slot.slotStart.month,
+        slot.slotStart.day,
+      );
+      final nextDay = dayStart.add(const Duration(days: 1));
+
+      final snapshot = await _firestore
+          .collection(_collectionName)
+          .where("slot_start", isGreaterThanOrEqualTo: dayStart)
+          .where("slot_start", isLessThan: nextDay)
+          .get();
+
+      final nomorUrut = (snapshot.docs.length + 1).toString().padLeft(4, '0');
+
+      final tanggalFormat =
+          "${dayStart.year}-${dayStart.month.toString().padLeft(2, '0')}-${dayStart.day.toString().padLeft(2, '0')}";
+
+      final bookCode = "${slot.slotCode}/$tanggalFormat/$nomorUrut";
+
+      await _firestore.collection(_collectionName).add({
+        "book_by": nama,
+        "book_nim": nim,
+        "book_purpose": tujuan,
+        "book_code": bookCode,
+        "participant_count": participantCount,
+
+        "slotId": slotRef,
+        "user_id": userRef,
+
+        "slot_start": Timestamp.fromDate(slot.slotStart),
+        "slot_end": Timestamp.fromDate(slot.slotEnd),
+
+        "is_confirmed": false,
+        "is_rejected": false,
+        "is_present": false,
+
+        "createdAt": FieldValue.serverTimestamp(),
+      });
+
+      return "SUCCESS";
+    } catch (e) {
+      print("Error creating booking: $e");
+      return "ERROR";
     }
-
-    final dayStart = DateTime(
-      slot.slotStart.year,
-      slot.slotStart.month,
-      slot.slotStart.day,
-    );
-    final nextDay = dayStart.add(const Duration(days: 1));
-
-    final snapshot = await _firestore
-        .collection(_collectionName)
-        .where("slot_start", isGreaterThanOrEqualTo: dayStart)
-        .where("slot_start", isLessThan: nextDay)
-        .get();
-
-    final nomorUrut = (snapshot.docs.length + 1).toString().padLeft(4, '0');
-
-    final tanggalFormat =
-        "${dayStart.year}-${dayStart.month.toString().padLeft(2, '0')}-${dayStart.day.toString().padLeft(2, '0')}";
-
-    final bookCode = "${slot.slotCode}/$tanggalFormat/$nomorUrut";
-
-    await _firestore.collection(_collectionName).add({
-      "book_by": nama,
-      "book_nim": nim,
-      "book_purpose": tujuan,
-      "book_code": bookCode,
-      "participant_count": participantCount,
-
-      "slotId": slotRef,
-      "user_id": userRef,
-
-      "slot_start": Timestamp.fromDate(slot.slotStart),
-      "slot_end": Timestamp.fromDate(slot.slotEnd),
-
-      "is_confirmed": false,
-      "is_rejected": false,
-      "is_present": false,
-
-      "createdAt": FieldValue.serverTimestamp(),
-    });
-
-    await slotRef.update({"is_booked": true});
-
-    return "SUCCESS";
   }
 
   Stream<List<BookingModel>> getPendingBookings() {
@@ -153,23 +157,50 @@ class BookingService {
     required String bookingId,
     required bool isConfirmed,
   }) async {
-    await _firestore.collection(_collectionName).doc(bookingId).update({
-      "is_confirmed": isConfirmed,
-    });
+    try {
+      await _firestore.collection(_collectionName).doc(bookingId).update({
+        "is_confirmed": isConfirmed,
+      });
+    } catch (e) {
+      print("Error updating booking status: $e");
+      rethrow;
+    }
   }
 
   Future<void> setApproved(String bookingId) async {
-    await _firestore.collection(_collectionName).doc(bookingId).update({
-      'is_confirmed': true,
-      'is_rejected': false,
-    });
+    try {
+      await _firestore.collection(_collectionName).doc(bookingId).update({
+        'is_confirmed': true,
+        'is_rejected': false,
+      });
+    } catch (e) {
+      print("Error approving booking: $e");
+      rethrow;
+    }
   }
 
-  Future<void> setRejected(String bookingId) async {
-    await _firestore.collection(_collectionName).doc(bookingId).update({
-      'is_confirmed': false,
-      'is_rejected': true,
-    });
+  // Return slotId untuk keperluan update slot
+  Future<String?> setRejected(String bookingId) async {
+    try {
+      // Ambil data booking dulu untuk mendapatkan slotId
+      final bookingDoc = await _firestore.collection(_collectionName).doc(bookingId).get();
+      
+      if (!bookingDoc.exists) return null;
+      
+      final slotRef = bookingDoc.data()?['slotId'] as DocumentReference?;
+      
+      // Update booking status
+      await _firestore.collection(_collectionName).doc(bookingId).update({
+        'is_confirmed': false,
+        'is_rejected': true,
+      });
+      
+      // Return slotId untuk diupdate di caller
+      return slotRef?.id;
+    } catch (e) {
+      print("Error rejecting booking: $e");
+      return null;
+    }
   }
 
   // Hitung pengajuan yg belum di konfirmasi
@@ -207,33 +238,33 @@ class BookingService {
         .where('createdAt', isGreaterThan: sevenDaysAgo)
         .snapshots()
         .asyncMap((snapshot) async {
-          final Map<String, int> labCount = {};
+      final Map<String, int> labCount = {};
 
-          for (var doc in snapshot.docs) {
-            final data = doc.data() as Map<String, dynamic>;
+      for (var doc in snapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
 
-            try {
-              final DocumentReference? slotRef =
-                  data['slotId'] as DocumentReference?;
-              if (slotRef != null) {
-                final slotDoc = await slotRef.get();
-                final slotData = slotDoc.data() as Map<String, dynamic>?;
-                if (slotData != null) {
-                  final DocumentReference? labRef =
-                      slotData['lab_ref'] as DocumentReference?;
-                  if (labRef != null) {
-                    final labId = labRef.id;
-                    labCount[labId] = (labCount[labId] ?? 0) + 1;
-                  }
-                }
+        try {
+          final DocumentReference? slotRef =
+              data['slotId'] as DocumentReference?;
+          if (slotRef != null) {
+            final slotDoc = await slotRef.get();
+            final slotData = slotDoc.data() as Map<String, dynamic>?;
+            if (slotData != null) {
+              final DocumentReference? labRef =
+                  slotData['lab_ref'] as DocumentReference?;
+              if (labRef != null) {
+                final labId = labRef.id;
+                labCount[labId] = (labCount[labId] ?? 0) + 1;
               }
-            } catch (e) {
-              print("Error processing booking document ${doc.id}: $e");
-              continue;
             }
           }
-          return labCount;
-        });
+        } catch (e) {
+          print("Error processing booking document ${doc.id}: $e");
+          continue;
+        }
+      }
+      return labCount;
+    });
   }
 
   Stream<List<BookingModel>> getAllConfirmedBookings() {
@@ -247,39 +278,47 @@ class BookingService {
   }
 
   Future<void> setPresent(String bookingId) async {
-    await _firestore.collection(_collectionName).doc(bookingId).update({
-      'is_present': true,
-    });
-  }
-  Future<void> setNotPresent(String bookingId) async {
-    await _firestore.collection(_collectionName).doc(bookingId).update({
-      'is_present': false,
-    });
+    try {
+      await _firestore.collection(_collectionName).doc(bookingId).update({
+        'is_present': true,
+      });
+    } catch (e) {
+      print("Error setting present: $e");
+      rethrow;
+    }
   }
 
-  
+  Future<void> setNotPresent(String bookingId) async {
+    try {
+      await _firestore.collection(_collectionName).doc(bookingId).update({
+        'is_present': false,
+      });
+    } catch (e) {
+      print("Error setting not present: $e");
+      rethrow;
+    }
+  }
+
   Stream<List<BookingModel>> getBookingsByUser(String userId) {
     final userRef = _firestore.doc("Users/$userId");
     return _firestore
         .collection(_collectionName)
         .where("user_id", isEqualTo: userRef)
-        // .orderBy("createdAt", descending: true)  // Comment this out temporarily
         .snapshots()
         .map(
           (snapshot) {
-            // Sort in-memory instead
-            final bookings = snapshot.docs
-                .map((doc) => BookingModel.fromFirestore(doc.id, doc.data()))
-                .toList();
-            
-            bookings.sort((a, b) {
-              if (a.createdAt == null) return 1;
-              if (b.createdAt == null) return -1;
-              return b.createdAt!.compareTo(a.createdAt!);
-            });
-            
-            return bookings;
-          },
+        final bookings = snapshot.docs
+            .map((doc) => BookingModel.fromFirestore(doc.id, doc.data()))
+            .toList();
+
+        bookings.sort((a, b) {
+          if (a.createdAt == null) return 1;
+          if (b.createdAt == null) return -1;
+          return b.createdAt!.compareTo(a.createdAt!);
+        });
+
+        return bookings;
+      },
         );
   }
 }

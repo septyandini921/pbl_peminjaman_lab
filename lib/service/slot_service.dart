@@ -7,7 +7,7 @@ class SlotService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final String _collectionName = 'Slots';
 
-  // Read
+  // Read - Stream untuk real-time update
   Stream<List<SlotModel>> getSlotsStreamByDate({
     required LabModel lab,
     required DateTime selectedDate,
@@ -67,7 +67,7 @@ class SlotService {
       endTime.minute,
     );
 
-    final docRef = _firestore.collection(_collectionName).doc(); // <-- AUTO ID
+    final docRef = _firestore.collection(_collectionName).doc();
     final DocumentReference labRef = _firestore.doc("Labs/${lab.id}");
 
     final newSlot = SlotModel(
@@ -87,14 +87,117 @@ class SlotService {
         .set(newSlot.toMap());
   }
 
-  // update slot status
+  // update slot status (open/close) dengan error handling
   Future<void> updateSlotStatus({
     required String slotId,
     required bool isOpen,
   }) async {
-    await _firestore.collection(_collectionName).doc(slotId).update({
-      'is_open': isOpen,
-    });
+    try {
+      await _firestore.collection(_collectionName).doc(slotId).update({
+        'is_open': isOpen,
+      });
+    } catch (e) {
+      print('Error updating slot status: $e');
+      rethrow;
+    }
+  }
+
+  // update slot booked status dengan transaksi untuk menghindari race condition
+  Future<bool> updateSlotBookedStatus({
+    required String slotId,
+    required bool isBooked,
+  }) async {
+    try {
+      // Gunakan transaction untuk memastikan atomicity
+      return await _firestore.runTransaction<bool>((transaction) async {
+        final slotRef = _firestore.collection(_collectionName).doc(slotId);
+        final slotSnapshot = await transaction.get(slotRef);
+
+        if (!slotSnapshot.exists) {
+          throw Exception('Slot tidak ditemukan');
+        }
+
+        // Jika ingin booking, cek apakah sudah dibooking
+        if (isBooked) {
+          final currentIsBooked = slotSnapshot.data()?['is_booked'] ?? false;
+          if (currentIsBooked) {
+            // Slot sudah dibooking oleh orang lain
+            return false;
+          }
+        }
+
+        // Update status
+        transaction.update(slotRef, {
+          'is_booked': isBooked,
+        });
+
+        return true;
+      });
+    } catch (e) {
+      print('Error updating slot booked status: $e');
+      return false;
+    }
+  }
+
+  // Method untuk check dan update slot secara atomic
+  Future<bool> tryBookSlot({
+    required String slotId,
+  }) async {
+    try {
+      return await _firestore.runTransaction<bool>((transaction) async {
+        final slotRef = _firestore.collection(_collectionName).doc(slotId);
+        final slotSnapshot = await transaction.get(slotRef);
+
+        if (!slotSnapshot.exists) {
+          throw Exception('Slot tidak ditemukan');
+        }
+
+        final data = slotSnapshot.data()!;
+        final isBooked = data['is_booked'] ?? false;
+        final isOpen = data['is_open'] ?? true;
+
+        // Cek apakah slot available
+        if (isBooked || !isOpen) {
+          return false;
+        }
+
+        // Book slot
+        transaction.update(slotRef, {
+          'is_booked': true,
+        });
+
+        return true;
+      });
+    } catch (e) {
+      print('Error booking slot: $e');
+      return false;
+    }
+  }
+
+  // Method untuk release slot secara atomic
+  Future<bool> releaseSlot({
+    required String slotId,
+  }) async {
+    try {
+      return await _firestore.runTransaction<bool>((transaction) async {
+        final slotRef = _firestore.collection(_collectionName).doc(slotId);
+        final slotSnapshot = await transaction.get(slotRef);
+
+        if (!slotSnapshot.exists) {
+          throw Exception('Slot tidak ditemukan');
+        }
+
+        // Release slot
+        transaction.update(slotRef, {
+          'is_booked': false,
+        });
+
+        return true;
+      });
+    } catch (e) {
+      print('Error releasing slot: $e');
+      return false;
+    }
   }
 
   // update slot
@@ -105,57 +208,62 @@ class SlotService {
     required DateTime slotStart,
     required DateTime slotEnd,
   }) async {
-    await _firestore.collection(_collectionName).doc(slotId).update({
-      'slot_code': slotCode,
-      'slot_name': slotName,
-      'slot_start': slotStart,
-      'slot_end': slotEnd,
-    });
+    try {
+      await _firestore.collection(_collectionName).doc(slotId).update({
+        'slot_code': slotCode,
+        'slot_name': slotName,
+        'slot_start': slotStart,
+        'slot_end': slotEnd,
+      });
+    } catch (e) {
+      print('Error updating slot: $e');
+      rethrow;
+    }
   }
 
   // hapus slot
   Future<void> deleteSlot({required String slotId}) async {
-    await _firestore.collection(_collectionName).doc(slotId).delete();
+    try {
+      await _firestore.collection(_collectionName).doc(slotId).delete();
+    } catch (e) {
+      print('Error deleting slot: $e');
+      rethrow;
+    }
   }
 
-Stream<int> getTotalOpenSlotsWeekly() {
-        // Tentukan awal hari ini (00:00:00)
-        final startOfToday = DateTime(
-            DateTime.now().year, 
-            DateTime.now().month, 
-            DateTime.now().day
-        );
-        // Rentang 7 hari penuh dari awal hari ini
-        final sevenDaysFromNow = startOfToday.add(const Duration(days: 7));
-
-        return _firestore
-            .collection(_collectionName)
-            .where('is_open', isEqualTo: true)
-            // WAJIB ADA untuk Indeks Komposit dan filter jangkauan
-            .orderBy('slot_start') 
-            .where('slot_start', isGreaterThanOrEqualTo: startOfToday) // Mulai dari 00:00 hari ini
-            .where('slot_start', isLessThan: sevenDaysFromNow)
-            .snapshots()
-            .map((snapshot) => snapshot.docs.length);
-    }
-
-Stream<int> getTotalUsedSlotsWeekly() {
-    // Ambil tanggal hari ini, lalu set waktu ke 00:00:00 (Awal hari)
+  Stream<int> getTotalOpenSlotsWeekly() {
     final startOfToday = DateTime(
-        DateTime.now().year, 
-        DateTime.now().month, 
-        DateTime.now().day
+      DateTime.now().year,
+      DateTime.now().month,
+      DateTime.now().day,
     );
-    final sevenDaysFromNow = startOfToday.add(const Duration(days: 7)); // Rentang 7 hari penuh dari awal hari ini
+    final sevenDaysFromNow = startOfToday.add(const Duration(days: 7));
+
+    return _firestore
+        .collection(_collectionName)
+        .where('is_open', isEqualTo: true)
+        .where('slot_start', isGreaterThanOrEqualTo: startOfToday)
+        .where('slot_start', isLessThan: sevenDaysFromNow)
+        .orderBy('slot_start')
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
+  }
+
+  Stream<int> getTotalUsedSlotsWeekly() {
+    final startOfToday = DateTime(
+      DateTime.now().year,
+      DateTime.now().month,
+      DateTime.now().day,
+    );
+    final sevenDaysFromNow = startOfToday.add(const Duration(days: 7));
 
     return _firestore
         .collection(_collectionName)
         .where('is_booked', isEqualTo: true)
-        .orderBy('slot_start') // OrderBy harus tetap ada
-        .where('slot_start', isGreaterThanOrEqualTo: startOfToday) // <--- UBAH KE START OF DAY
+        .where('slot_start', isGreaterThanOrEqualTo: startOfToday)
         .where('slot_start', isLessThan: sevenDaysFromNow)
+        .orderBy('slot_start')
         .snapshots()
         .map((snapshot) => snapshot.docs.length);
-}
-
+  }
 }

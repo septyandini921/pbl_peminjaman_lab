@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/labs/lab_model.dart';
 import '../../models/slots/slot_model.dart';
 import '../../models/booking/booking_model.dart';
+import '../../service/slot_service.dart'; // TAMBAHKAN IMPORT INI
 import '../../widgets/app_bar.dart';
 
 class PeminjamanFormScreen extends StatefulWidget {
@@ -34,6 +35,7 @@ class _PeminjamanFormScreenState extends State<PeminjamanFormScreen> {
   String? tujuan;
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final SlotService _slotService = SlotService(); // TAMBAHKAN INI
 
   // Helper untuk menampilkan field read-only (child text)
   Widget _displayText(String text) {
@@ -365,6 +367,7 @@ class _PeminjamanFormScreenState extends State<PeminjamanFormScreen> {
     );
   }
 
+  // MODIFIED: Tambahkan update slot setelah booking berhasil
   Future<void> _submitBooking() async {
     if (!_formKey.currentState!.validate()) return;
     if (tujuan == null || tujuan!.isEmpty) {
@@ -403,10 +406,19 @@ class _PeminjamanFormScreenState extends State<PeminjamanFormScreen> {
         isPresent: false,
       );
 
+      // Simpan booking
       await _firestore.collection('Booking').add(booking.toFirestore());
 
+      // UPDATE SLOT STATUS MENJADI BOOKED
+      await _slotService.updateSlotBookedStatus(
+        slotId: widget.slot.id,
+        isBooked: true,
+      );
+
       // Show modal upon success
-      _showPeminjamanBerhasilModal(context);
+      if (mounted) {
+        _showPeminjamanBerhasilModal(context);
+      }
 
     } catch (e) {
       _showSnack("Gagal menyimpan: $e");
@@ -426,86 +438,88 @@ class _PeminjamanFormScreenState extends State<PeminjamanFormScreen> {
     return "$slotCode/$tanggal/$nomorUrut";
   }
 
-void _showSnack(String message) {
-  ScaffoldMessenger.of(
-    context,
-  ).showSnackBar(SnackBar(content: Text(message)));
-}
+  void _showSnack(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
 
-// Merged modal function from user to show success dialog and pop routes
-void _showPeminjamanBerhasilModal(BuildContext parentContext) {
-  showDialog(
-    context: parentContext,
-    builder: (BuildContext dialogContext) {
-      return AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: const Text(
-          "Peminjaman Berhasil",
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
+  // MODIFIED: Tambahkan Navigator.pop dengan result "SUCCESS"
+  void _showPeminjamanBerhasilModal(BuildContext parentContext) {
+    showDialog(
+      context: parentContext,
+      barrierDismissible: false, // Prevent dismiss by tapping outside
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
-        ),
-        content: const Text(
-          "Silakan Tunggu Konfirmasi Melalui Notifikasi",
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 16),
-        ),
-        actions: <Widget>[
-          // Center the button horizontally
-          Center(
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF7A73D1), // Ungu warna tombol
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                textStyle: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              onPressed: () {
-                Navigator.of(dialogContext).pop(); // Menutup modal
-                Navigator.of(parentContext).pop(); // Kembali satu layar
-                Navigator.of(parentContext).pop(); // Kembali lagi (sesuai behavior sebelumnya)
-              },
-              child: const Text("OK"),
+          title: const Text(
+            "Peminjaman Berhasil",
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
             ),
           ),
-        ],
-      );
-    },
-  );
-}
+          content: const Text(
+            "Silakan Tunggu Konfirmasi Melalui Notifikasi",
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 16),
+          ),
+          actions: <Widget>[
+            Center(
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF7A73D1),
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  textStyle: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                onPressed: () {
+                  Navigator.of(dialogContext).pop(); // Tutup modal
+                  Navigator.of(parentContext).pop("SUCCESS"); // RETURN SUCCESS KE SCREEN SEBELUMNYA
+                },
+                child: const Text(
+                  "OK",
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
-Widget _buildTextFormField(
-  TextEditingController controller,
-  String hint, {
-  TextInputType keyboardType = TextInputType.text,
-}) {
-  return TextFormField(
-    controller: controller,
-    keyboardType: keyboardType,
-    decoration: InputDecoration(
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 14,
+  Widget _buildTextFormField(
+    TextEditingController controller,
+    String hint, {
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      decoration: InputDecoration(
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
+        hintText: hint,
+        hintStyle: const TextStyle(
+          fontStyle: FontStyle.italic,
+          color: Colors.grey,
+        ),
+        border: InputBorder.none,
       ),
-      hintText: hint,
-      hintStyle: const TextStyle(
-        fontStyle: FontStyle.italic,
-        color: Colors.grey,
-      ),
-      border: InputBorder.none,
-    ),
-    style: const TextStyle(fontSize: 16, color: Colors.black),
-    validator: (v) => v == null || v.isEmpty ? "Wajib diisi" : null,
-  );
-}
+      style: const TextStyle(fontSize: 16, color: Colors.black),
+      validator: (v) => v == null || v.isEmpty ? "Wajib diisi" : null,
+    );
+  }
 
-Future<void> _dialogTambahTujuan() async {
+  Future<void> _dialogTambahTujuan() async {
     final TextEditingController ctrl = TextEditingController();
 
     await showDialog<void>(
@@ -526,7 +540,7 @@ Future<void> _dialogTambahTujuan() async {
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: const Color(0xFF7A73D1), // Ungu tema
+                    color: const Color(0xFF7A73D1),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -567,7 +581,7 @@ Future<void> _dialogTambahTujuan() async {
                   children: [
                     TextButton(
                       style: TextButton.styleFrom(
-                        foregroundColor: const Color(0xFF7A73D1), // Ungu
+                        foregroundColor: const Color(0xFF7A73D1),
                         textStyle: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                       onPressed: () => Navigator.of(context).pop(),
@@ -576,7 +590,7 @@ Future<void> _dialogTambahTujuan() async {
                     const SizedBox(width: 12),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF7A73D1), // Ungu
+                        backgroundColor: const Color(0xFF7A73D1),
                         padding: const EdgeInsets.symmetric(
                           horizontal: 24,
                           vertical: 14,
@@ -596,7 +610,10 @@ Future<void> _dialogTambahTujuan() async {
                           Navigator.of(context).pop();
                         }
                       },
-                      child: const Text('Simpan'),
+                      child: const Text(
+                        'Simpan',
+                        style: TextStyle(color: Colors.white),
+                      ),
                     ),
                   ],
                 ),
@@ -612,9 +629,7 @@ Future<void> _dialogTambahTujuan() async {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBar(
-        actions: [
-          // Jika perlu, tambahkan tombol tambahan di sini
-        ],
+        actions: [],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -636,25 +651,25 @@ Future<void> _dialogTambahTujuan() async {
               ),
               const SizedBox(height: 14),
 
-              // Tampilan Slot (read-only) -> sekarang menampilkan waktu slot
+              // Tampilan Slot (read-only)
               _inputFieldWithGradientLabel(
                 label: 'Slot',
                 childInput: _displayText(_formatSlotTime(widget.slot)),
               ),
               const SizedBox(height: 14),
 
-              // NIM dengan gradien label
+              // NIM
               _nimInputField(),
               const SizedBox(height: 14),
 
-              // Nama dengan gradien label
+              // Nama
               _inputFieldWithGradientLabel(
                 label: 'Nama',
                 childInput: _buildTextFormField(namaCtrl, "Masukkan Nama"),
               ),
               const SizedBox(height: 14),
 
-              // Jumlah dengan gradien label
+              // Jumlah
               _inputFieldWithGradientLabel(
                 label: 'Jumlah',
                 childInput: _buildTextFormField(
@@ -665,7 +680,7 @@ Future<void> _dialogTambahTujuan() async {
               ),
               const SizedBox(height: 14),
 
-              // Tujuan dengan gradien label dan dropdown
+              // Tujuan
               _inputFieldWithGradientLabel(
                 label: 'Tujuan',
                 childInput: DropdownButtonFormField<String>(
@@ -704,7 +719,7 @@ Future<void> _dialogTambahTujuan() async {
               ),
               const SizedBox(height: 24),
 
-              // Peraturan dalam Card puti
+              // Peraturan
               Card(
                 color: Colors.white,
                 elevation: 4,
@@ -754,15 +769,15 @@ Future<void> _dialogTambahTujuan() async {
 
               const SizedBox(height: 20),
 
-              // Tombol dengan border gradient
+              // Tombol Submit
               SizedBox(
                 width: double.infinity,
                 child: Container(
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [
-                        Color(0xFF4D55CC), // 0%
-                        Color(0xFF7A73D1), // 100%
+                        Color(0xFF4D55CC),
+                        Color(0xFF7A73D1),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
