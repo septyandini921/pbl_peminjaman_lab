@@ -237,7 +237,7 @@ class _ProfilStudentState extends State<ProfilStudent> {
                 ],
               ),
             ),
-      bottomNavigationBar: const BottomNavBar(currentIndex: 2),
+      bottomNavigationBar: const BottomNavBar(currentIndex: 3),
     );
   }
 

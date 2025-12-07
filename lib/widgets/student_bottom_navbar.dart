@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../screens/student/home_screen.dart';
 import '../screens/student/info_screen.dart';
 import '../screens/student/profil_student.dart';
+import '../screens/student/notification_screen.dart';
 
 class BottomNavBar extends StatelessWidget {
   final int currentIndex;
@@ -31,6 +32,17 @@ class BottomNavBar extends StatelessWidget {
         Navigator.pushReplacement(
           context,
           PageRouteBuilder(
+            pageBuilder: (_, __, ___) => const NotificationScreen(),
+            transitionDuration: Duration.zero,
+            reverseTransitionDuration: Duration.zero,
+          ),
+        );
+        break;  
+
+      case 2:
+        Navigator.pushReplacement(
+          context,
+          PageRouteBuilder(
             pageBuilder: (_, __, ___) => const InfoScreen(),
             transitionDuration: Duration.zero,
             reverseTransitionDuration: Duration.zero,
@@ -38,7 +50,7 @@ class BottomNavBar extends StatelessWidget {
         );
         break;
 
-      case 2:
+      case 3:
         Navigator.pushReplacement(
           context,
           PageRouteBuilder(
@@ -66,6 +78,10 @@ class BottomNavBar extends StatelessWidget {
         BottomNavigationBarItem(
           icon: Icon(Icons.home),
           label: "Beranda",
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.notifications),
+          label: "Notifikasi",
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.info),

@@ -1,3 +1,4 @@
+//C:\Kuliah\semester5\Moblie\PBL\pbl_peminjaman_lab\lib\service\booking_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/labs/lab_model.dart';
 import '../models/slots/slot_model.dart';
@@ -236,23 +237,49 @@ class BookingService {
   }
 
   Stream<List<BookingModel>> getAllConfirmedBookings() {
-  return _firestore
-      .collection("Booking")
-      .where("is_confirmed", isEqualTo: true)
-      .snapshots()
-      .map((snap) => snap.docs
-          .map((d) => BookingModel.fromFirestore(d.id, d.data()))
-          .toList());
-}
+    return _firestore
+        .collection("Booking")
+        .where("is_confirmed", isEqualTo: true)
+        .snapshots()
+        .map((snap) => snap.docs
+            .map((d) => BookingModel.fromFirestore(d.id, d.data()))
+            .toList());
+  }
 
-Future<void> setPresent(String bookingId) async {
-  await _firestore.collection(_collectionName).doc(bookingId).update({
-    'is_present': true,
-  });
-}
-Future<void> setNotPresent(String bookingId) async {
-  await _firestore.collection(_collectionName).doc(bookingId).update({
-    'is_present': false,
-  });
-}
+  Future<void> setPresent(String bookingId) async {
+    await _firestore.collection(_collectionName).doc(bookingId).update({
+      'is_present': true,
+    });
+  }
+  Future<void> setNotPresent(String bookingId) async {
+    await _firestore.collection(_collectionName).doc(bookingId).update({
+      'is_present': false,
+    });
+  }
+
+  
+  Stream<List<BookingModel>> getBookingsByUser(String userId) {
+    final userRef = _firestore.doc("Users/$userId");
+    return _firestore
+        .collection(_collectionName)
+        .where("user_id", isEqualTo: userRef)
+        // .orderBy("createdAt", descending: true)  // Comment this out temporarily
+        .snapshots()
+        .map(
+          (snapshot) {
+            // Sort in-memory instead
+            final bookings = snapshot.docs
+                .map((doc) => BookingModel.fromFirestore(doc.id, doc.data()))
+                .toList();
+            
+            bookings.sort((a, b) {
+              if (a.createdAt == null) return 1;
+              if (b.createdAt == null) return -1;
+              return b.createdAt!.compareTo(a.createdAt!);
+            });
+            
+            return bookings;
+          },
+        );
+  }
 }
