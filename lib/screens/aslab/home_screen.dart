@@ -117,7 +117,7 @@ Future<void> _loadUserName() async {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               StreamBuilder<int>(
-                stream: _bookingService.getPendingBookingsCountWeekly(),
+                stream: _bookingService.getConfirmedBookingsCountWeekly(),
                 builder: (context, snapshot) {
                   final value = snapshot.data?.toString() ?? "0";
                   return _statBox(value, "Pengajuan");

@@ -227,23 +227,24 @@ class BookingService {
     }
   }
 
-  Stream<int> getPendingBookingsCountWeekly() {
+  Stream<int> getAllBookingsCountWeekly() { //pengajuan
     final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
+
     return _firestore
         .collection(_collectionName)
-        .where("is_confirmed", isEqualTo: false)
-        .where("is_rejected", isEqualTo: false)
-        .where("createdAt", isGreaterThanOrEqualTo: sevenDaysAgo)
+        .where("createdAt", isGreaterThanOrEqualTo: sevenDaysAgo) 
         .snapshots()
         .map((snapshot) => snapshot.docs.length);
   }
 
-  Stream<int> getAllBookingsCountWeekly() {
+  Stream<int> getConfirmedBookingsCountWeekly() { //peminjaman
     final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
-
+    
     return _firestore
         .collection(_collectionName)
-        .where("createdAt", isGreaterThanOrEqualTo: sevenDaysAgo)
+        .where("is_confirmed", isEqualTo: true)
+        .where("is_rejected", isEqualTo: false)
+        .where("createdAt", isGreaterThanOrEqualTo: sevenDaysAgo) 
         .snapshots()
         .map((snapshot) => snapshot.docs.length);
   }
