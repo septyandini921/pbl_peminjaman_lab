@@ -6,6 +6,7 @@ import '../../../models/labs/lab_model.dart';
 import '../../widgets/student_bottom_navbar.dart';
 import 'booking_screen.dart';
 import '../../widgets/app_bar.dart';
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -73,7 +74,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
-
       body: CustomScrollView(
         slivers: [
           SliverList(
@@ -110,37 +110,37 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     const SizedBox(height: 10),
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.1),
+                            spreadRadius: 1,
+                            blurRadius: 5,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            'Halo $userName 👋',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const Text(
+                            'Selamat Datang di Sistem Informasi Peminjaman Lab!',
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
                     const Text(
                       "Daftar Lab Tersedia",
                       style: TextStyle(
@@ -152,7 +152,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
-
               // Daftar Lab
               StreamBuilder<List<LabModel>>(
                 stream: labService.getActiveLabs(),
@@ -274,7 +273,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: const BottomNavBar(currentIndex: 0), 
+      bottomNavigationBar: const BottomNavBar(currentIndex: 0),
     );
   }
 }
