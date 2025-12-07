@@ -1,11 +1,10 @@
-//C:\Kuliah\semester5\Moblie\PBL\pbl_peminjaman_lab\lib\screens\student\notification_screen.dart
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';  // Untuk mendapatkan userId
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../widgets/student_bottom_navbar.dart';
 import '../../widgets/app_bar.dart';
 import '../../service/booking_service.dart';
 import '../../models/booking/booking_model.dart';
-import 'detail_peminjaman_student.dart';  // Import halaman detail
+import 'detail_peminjaman_student.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
@@ -21,11 +20,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
   @override
   void initState() {
     super.initState();
-    // Asumsikan user sudah login, ambil userId dari Firebase Auth
     _currentUserId = FirebaseAuth.instance.currentUser!.uid;
   }
 
-  // Fungsi untuk mendapatkan pesan notifikasi berdasarkan status booking
   String _getNotificationMessage(BookingModel booking) {
     if (booking.isRejected) {
       return "Peminjaman ${booking.bookCode} ditolak";
@@ -36,7 +33,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
     }
   }
 
-  // Fungsi untuk mendapatkan warna card berdasarkan status
   Color _getCardColor(BookingModel booking) {
     if (booking.isRejected) {
       return Colors.red.shade100;
@@ -47,7 +43,46 @@ class _NotificationScreenState extends State<NotificationScreen> {
     }
   }
 
- @override
+  IconData _getStatusIcon(BookingModel booking) {
+    if (booking.isRejected) {
+      return Icons.cancel;
+    } else if (booking.isConfirmed) {
+      return Icons.check_circle;
+    } else {
+      return Icons.hourglass_empty;
+    }
+  }
+
+  Color _getIconColor(BookingModel booking) {
+    if (booking.isRejected) {
+      return Colors.red;
+    } else if (booking.isConfirmed) {
+      return Colors.green;
+    } else {
+      return Colors.orange;
+    }
+  }
+
+  String _formatDateTime(DateTime? dateTime) {
+    if (dateTime == null) return 'Baru saja';
+    
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+
+    if (difference.inMinutes < 1) {
+      return 'Baru saja';
+    } else if (difference.inHours < 1) {
+      return '${difference.inMinutes} menit yang lalu';
+    } else if (difference.inDays < 1) {
+      return '${difference.inHours} jam yang lalu';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays} hari yang lalu';
+    } else {
+      return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: const CustomAppBar(
@@ -58,13 +93,11 @@ class _NotificationScreenState extends State<NotificationScreen> {
           )
         ],
       ),
-      // 1. Ganti body langsung StreamBuilder menjadi Column
       body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start, // Agar teks rata kiri
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 2. Bagian Header "Notifikasi"
           const Padding(
-            padding: EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0), // Padding atas/kiri/kanan
+            padding: EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0),
             child: Text(
               "Notifikasi",
               style: TextStyle(
@@ -75,7 +108,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
             ),
           ),
           
-          // 3. Bungkus StreamBuilder dengan Expanded agar mengisi sisa layar
           Expanded(
             child: StreamBuilder<List<BookingModel>>(
               stream: _bookingService.getBookingsByUser(_currentUserId),
@@ -91,10 +123,21 @@ class _NotificationScreenState extends State<NotificationScreen> {
                 final bookings = snapshot.data ?? [];
 
                 if (bookings.isEmpty) {
-                  return const Center(
-                    child: Text(
-                      'Tidak ada notifikasi',
-                      style: TextStyle(fontSize: 18, color: Colors.grey),
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.notifications_none,
+                          size: 64,
+                          color: Colors.grey.shade400,
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Tidak ada notifikasi',
+                          style: TextStyle(fontSize: 18, color: Colors.grey),
+                        ),
+                      ],
                     ),
                   );
                 }
@@ -106,18 +149,20 @@ class _NotificationScreenState extends State<NotificationScreen> {
                     final booking = bookings[index];
                     final message = _getNotificationMessage(booking);
                     final cardColor = _getCardColor(booking);
+                    final icon = _getStatusIcon(booking);
+                    final iconColor = _getIconColor(booking);
+                    final timeAgo = _formatDateTime(booking.createdAt);
 
+                    // ✅ KUNCI: Tambahkan unique key untuk setiap card
                     return Card(
+                      key: ValueKey(booking.id), // ← PENTING: Unique key berdasarkan booking ID
                       color: cardColor,
                       margin: const EdgeInsets.only(bottom: 12.0),
-                      child: ListTile(
-                        title: Text(
-                          message,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        subtitle: Text(
-                          'Tap untuk melihat detail peminjaman',
-                        ),
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: InkWell(
                         onTap: () {
                           Navigator.push(
                             context,
@@ -127,6 +172,68 @@ class _NotificationScreenState extends State<NotificationScreen> {
                             ),
                           );
                         },
+                        borderRadius: BorderRadius.circular(12),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12.0),
+                          child: Row(
+                            children: [
+                              // Icon status
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: iconColor.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  icon,
+                                  color: iconColor,
+                                  size: 28,
+                                ),
+                              ),
+                              
+                              const SizedBox(width: 12),
+                              
+                              // Text content
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      message,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Tap untuk melihat detail peminjaman',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade700,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      timeAgo,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.grey.shade600,
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              
+                              // Chevron right
+                              Icon(
+                                Icons.chevron_right,
+                                color: Colors.grey.shade600,
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     );
                   },
@@ -136,7 +243,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
           ),
         ],
       ),
-        bottomNavigationBar: BottomNavBar(currentIndex: 1),
-      );
-    }
+      bottomNavigationBar: BottomNavBar(currentIndex: 1),
+    );
   }
+}

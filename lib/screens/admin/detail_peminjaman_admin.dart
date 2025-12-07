@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/booking/booking_model.dart';
 import '../../service/booking_service.dart';
+import '../../service/slot_service.dart';
 
 class DetailPeminjamanAdmin extends StatelessWidget {
   final BookingModel booking;
@@ -11,6 +12,7 @@ class DetailPeminjamanAdmin extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bookingService = BookingService();
+    final slotService = SlotService();
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -167,11 +169,45 @@ class DetailPeminjamanAdmin extends StatelessWidget {
                           onPressed: () async {
                             showConfirmDialog(
                               context: context,
-                              title:
-                                  "Apakah anda yakin menkonfirmasi peminjaman?",
+                              title: "Apakah anda yakin mengkonfirmasi peminjaman?",
+                              confirmText: "Konfirmasi",
+                              confirmColor: Colors.green,
                               onYes: () async {
-                                await bookingService.setApproved(booking.id);
-                                if (context.mounted) Navigator.pop(context);
+                                try {
+                                  await bookingService.setApproved(booking.id);
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Row(
+                                          children: [
+                                            Icon(Icons.check_circle, color: Colors.white),
+                                            SizedBox(width: 8),
+                                            Text('Peminjaman berhasil dikonfirmasi'),
+                                          ],
+                                        ),
+                                        backgroundColor: Colors.green,
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                    Navigator.pop(context);
+                                  }
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Row(
+                                          children: [
+                                            const Icon(Icons.error_outline, color: Colors.white),
+                                            const SizedBox(width: 8),
+                                            Text('Gagal mengkonfirmasi: $e'),
+                                          ],
+                                        ),
+                                        backgroundColor: Colors.red,
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                  }
+                                }
                               },
                             );
                           },
@@ -180,7 +216,7 @@ class DetailPeminjamanAdmin extends StatelessWidget {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(30),
                             ),
-                            elevation: 0,
+                            elevation: 2,
                           ),
                           child: const Text(
                             "Konfirmasi",
@@ -192,7 +228,9 @@ class DetailPeminjamanAdmin extends StatelessWidget {
                           ),
                         ),
                       ),
+                      
                       const SizedBox(height: 15),
+                      
                       SizedBox(
                         width: double.infinity,
                         height: 50,
@@ -201,9 +239,80 @@ class DetailPeminjamanAdmin extends StatelessWidget {
                             showConfirmDialog(
                               context: context,
                               title: "Apakah anda yakin menolak peminjaman?",
+                              confirmText: "Tolak",
+                              confirmColor: Colors.redAccent,
                               onYes: () async {
-                                await bookingService.setRejected(booking.id);
-                                if (context.mounted) Navigator.pop(context);
+                                try {
+                                  final slotId = await bookingService.setRejected(booking.id);
+                                  
+                                  if (slotId != null) {
+                                    final success = await slotService.releaseSlot(slotId: slotId);
+                                    
+                                    if (!success && context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Row(
+                                            children: [
+                                              Icon(Icons.warning_amber, color: Colors.white),
+                                              SizedBox(width: 8),
+                                              Text('Peminjaman ditolak, tapi gagal melepaskan slot'),
+                                            ],
+                                          ),
+                                          backgroundColor: Colors.orange,
+                                          behavior: SnackBarBehavior.floating,
+                                        ),
+                                      );
+                                    } else if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Row(
+                                            children: [
+                                              Icon(Icons.check_circle, color: Colors.white),
+                                              SizedBox(width: 8),
+                                              Text('Peminjaman berhasil ditolak'),
+                                            ],
+                                          ),
+                                          backgroundColor: Colors.red,
+                                          behavior: SnackBarBehavior.floating,
+                                        ),
+                                      );
+                                    }
+                                  } else {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Row(
+                                            children: [
+                                              Icon(Icons.error_outline, color: Colors.white),
+                                              SizedBox(width: 8),
+                                              Text('Slot tidak ditemukan'),
+                                            ],
+                                          ),
+                                          backgroundColor: Colors.red,
+                                          behavior: SnackBarBehavior.floating,
+                                        ),
+                                      );
+                                    }
+                                  }
+                                  
+                                  if (context.mounted) Navigator.pop(context);
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Row(
+                                          children: [
+                                            const Icon(Icons.error_outline, color: Colors.white),
+                                            const SizedBox(width: 8),
+                                            Text('Gagal menolak peminjaman: $e'),
+                                          ],
+                                        ),
+                                        backgroundColor: Colors.red,
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                  }
+                                }
                               },
                             );
                           },
@@ -212,7 +321,7 @@ class DetailPeminjamanAdmin extends StatelessWidget {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(30),
                             ),
-                            elevation: 0,
+                            elevation: 2,
                           ),
                           child: const Text(
                             "Tolak",
@@ -281,6 +390,8 @@ class DetailPeminjamanAdmin extends StatelessWidget {
   Future<void> showConfirmDialog({
     required BuildContext context,
     required String title,
+    required String confirmText,
+    required Color confirmColor,
     required VoidCallback onYes,
   }) {
     return showDialog(
@@ -296,47 +407,51 @@ class DetailPeminjamanAdmin extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: confirmColor.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    confirmText == "Konfirmasi" ? Icons.check_circle_outline : Icons.cancel_outlined,
+                    size: 48,
+                    color: confirmColor,
+                  ),
+                ),
+                
+                const SizedBox(height: 20),
+                
                 Text(
                   title,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                    fontSize: 22,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 35),
+                
+                const SizedBox(height: 30),
 
                 Row(
                   children: [
-                    // 🚨 Tombol Batal (Gradient)
                     Expanded(
                       child: SizedBox(
                         height: 48,
-                        child: Ink(
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              begin: Alignment.centerLeft,
-                              end: Alignment.centerRight,
-                              colors: [Color(0xFF7A73D1), Color(0xFFB5A8D5)],
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Color(0xFF7986CB)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15),
                             ),
-                            borderRadius: BorderRadius.circular(15),
                           ),
-                          child: ElevatedButton(
-                            onPressed: () => Navigator.pop(context),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.transparent,
-                              shadowColor: Colors.transparent,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(15),
-                              ),
-                            ),
-                            child: const Text(
-                              "Batal",
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                                color: Colors.white,
-                              ),
+                          child: const Text(
+                            "Batal",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: Color(0xFF7986CB),
                             ),
                           ),
                         ),
@@ -345,38 +460,27 @@ class DetailPeminjamanAdmin extends StatelessWidget {
 
                     const SizedBox(width: 15),
 
-                    // 🔥 Tombol Ya (Gradient)
                     Expanded(
                       child: SizedBox(
                         height: 48,
-                        child: Ink(
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              begin: Alignment.centerLeft,
-                              end: Alignment.centerRight,
-                              colors: [Color(0xFF9087F5), Color(0xFFB5A8D5)],
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            onYes();
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: confirmColor,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15),
                             ),
-                            borderRadius: BorderRadius.circular(15),
+                            elevation: 0,
                           ),
-                          child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                              onYes();
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.transparent,
-                              shadowColor: Colors.transparent,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(15),
-                              ),
-                            ),
-                            child: const Text(
-                              "Ya",
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                                color: Colors.white,
-                              ),
+                          child: Text(
+                            confirmText,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: Colors.white,
                             ),
                           ),
                         ),
