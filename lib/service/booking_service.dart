@@ -184,12 +184,13 @@ class BookingService {
         .map((snapshot) => snapshot.docs.length);
   }
 
-  /// Hitung jumlah SEMUA Booking (dikonfirmasi, di rejected dan disetujui)
+  /// Hitung Booking disetujui
   Stream<int> getAllBookingsCountWeekly() {
     final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
 
     return _firestore
         .collection(_collectionName)
+        .where("is_confirmed", isEqualTo: true)
         .where("createdAt", isGreaterThanOrEqualTo: sevenDaysAgo)
         .snapshots()
         .map((snapshot) => snapshot.docs.length);
