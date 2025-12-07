@@ -1,3 +1,4 @@
+//C:\Kuliah\semester5\Moblie\PBL\pbl_peminjaman_lab\lib\screens\student\detail_peminjaman_student.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/booking/booking_model.dart';

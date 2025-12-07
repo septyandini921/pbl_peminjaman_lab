@@ -1,3 +1,4 @@
+//C:\Kuliah\semester5\Moblie\PBL\pbl_peminjaman_lab\lib\service\lab_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/labs/lab_model.dart';
 

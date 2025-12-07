@@ -7,7 +7,6 @@ class SlotService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final String _collectionName = 'Slots';
 
-  // Read - Stream untuk real-time update
   Stream<List<SlotModel>> getSlotsStreamByDate({
     required LabModel lab,
     required DateTime selectedDate,
@@ -35,14 +34,12 @@ class SlotService {
         });
   }
 
-  // auto increment id
   Future<String> getNextId() async {
     final snapshot = await _firestore.collection(_collectionName).get();
     final nextId = (snapshot.docs.length + 1).toString();
     return nextId;
   }
 
-  // tambah slot
   Future<void> addSlot({
     required LabModel lab,
     required String slotCode,
@@ -87,7 +84,6 @@ class SlotService {
         .set(newSlot.toMap());
   }
 
-  // update slot status (open/close) dengan error handling
   Future<void> updateSlotStatus({
     required String slotId,
     required bool isOpen,
@@ -102,13 +98,11 @@ class SlotService {
     }
   }
 
-  // update slot booked status dengan transaksi untuk menghindari race condition
   Future<bool> updateSlotBookedStatus({
     required String slotId,
     required bool isBooked,
   }) async {
     try {
-      // Gunakan transaction untuk memastikan atomicity
       return await _firestore.runTransaction<bool>((transaction) async {
         final slotRef = _firestore.collection(_collectionName).doc(slotId);
         final slotSnapshot = await transaction.get(slotRef);
@@ -117,16 +111,13 @@ class SlotService {
           throw Exception('Slot tidak ditemukan');
         }
 
-        // Jika ingin booking, cek apakah sudah dibooking
         if (isBooked) {
           final currentIsBooked = slotSnapshot.data()?['is_booked'] ?? false;
           if (currentIsBooked) {
-            // Slot sudah dibooking oleh orang lain
             return false;
           }
         }
 
-        // Update status
         transaction.update(slotRef, {
           'is_booked': isBooked,
         });
@@ -139,7 +130,6 @@ class SlotService {
     }
   }
 
-  // Method untuk check dan update slot secara atomic
   Future<bool> tryBookSlot({
     required String slotId,
   }) async {
@@ -156,12 +146,10 @@ class SlotService {
         final isBooked = data['is_booked'] ?? false;
         final isOpen = data['is_open'] ?? true;
 
-        // Cek apakah slot available
         if (isBooked || !isOpen) {
           return false;
         }
 
-        // Book slot
         transaction.update(slotRef, {
           'is_booked': true,
         });
@@ -174,7 +162,6 @@ class SlotService {
     }
   }
 
-  // Method untuk release slot secara atomic
   Future<bool> releaseSlot({
     required String slotId,
   }) async {
@@ -187,7 +174,6 @@ class SlotService {
           throw Exception('Slot tidak ditemukan');
         }
 
-        // Release slot
         transaction.update(slotRef, {
           'is_booked': false,
         });
@@ -200,7 +186,6 @@ class SlotService {
     }
   }
 
-  // update slot
   Future<void> updateSlot({
     required String slotId,
     required String slotCode,
@@ -221,7 +206,6 @@ class SlotService {
     }
   }
 
-  // hapus slot
   Future<void> deleteSlot({required String slotId}) async {
     try {
       await _firestore.collection(_collectionName).doc(slotId).delete();

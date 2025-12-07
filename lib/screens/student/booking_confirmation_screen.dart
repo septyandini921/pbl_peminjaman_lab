@@ -1,12 +1,11 @@
+//C:\Kuliah\semester5\Moblie\PBL\pbl_peminjaman_lab\lib\screens\student\booking_confirmation_screen.dart
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
 import '../../models/labs/lab_model.dart';
 import '../../models/slots/slot_model.dart';
-import '../../models/booking/booking_model.dart';
-import '../../service/slot_service.dart'; // TAMBAHKAN IMPORT INI
-import '../../widgets/app_bar.dart';
+import '../../service/booking_service.dart';
+import '../../service/slot_service.dart';
 
 class PeminjamanFormScreen extends StatefulWidget {
   final LabModel lab;
@@ -26,781 +25,416 @@ class PeminjamanFormScreen extends StatefulWidget {
 
 class _PeminjamanFormScreenState extends State<PeminjamanFormScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _nimController = TextEditingController();
+  final _namaController = TextEditingController();
+  final _jumlahController = TextEditingController();
+  
+  String _selectedTujuan = 'Kelas Pengganti';
+  bool _isAgreed = false;
+  bool _isLoading = false;
 
-  final TextEditingController namaCtrl = TextEditingController();
-  final TextEditingController nimCtrl = TextEditingController();
-  final TextEditingController jumlahCtrl = TextEditingController();
-  bool isAgree = false;
+  final List<String> _tujuanOptions = [
+    'Kelas Pengganti',
+    'Praktikum',
+    'Penelitian',
+    'Rapat',
+    'Lainnya',
+  ];
 
-  String? tujuan;
+  final BookingService _bookingService = BookingService();
+  final SlotService _slotService = SlotService();
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final SlotService _slotService = SlotService(); // TAMBAHKAN INI
-
-  // Helper untuk menampilkan field read-only (child text)
-  Widget _displayText(String text) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Text(
-        text,
-        style: const TextStyle(fontSize: 16, color: Colors.black),
-      ),
-    );
+  @override
+  void dispose() {
+    _nimController.dispose();
+    _namaController.dispose();
+    _jumlahController.dispose();
+    super.dispose();
   }
 
-  String _formatDate(DateTime date) {
-    return "${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}";
-  }
-
-  // Format value yang bisa berupa String / DateTime / Timestamp / int (minutes from midnight)
-  String _formatTimeValue(dynamic value) {
-    if (value == null) return '';
-    if (value is String) return value;
-    if (value is DateTime) {
-      return '${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';
+  // Validasi NIM: harus angka minimal 9 digit
+  String? _validateNIM(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'NIM wajib diisi';
     }
-    if (value is Timestamp) {
-      final d = value.toDate();
-      return '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+    if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
+      return 'NIM harus berupa angka';
     }
-    if (value is int) {
-      // assume it's minutes from midnight
-      final h = (value ~/ 60).toString().padLeft(2, '0');
-      final m = (value % 60).toString().padLeft(2, '0');
-      return '$h:$m';
+    if (value.length < 9) {
+      return 'NIM minimal 9 digit';
     }
-    // fallback
-    return value.toString();
-  }
-
-  // Try multiple common field names to read start/end/duration in the slot model.
-  dynamic _tryGetSlotField(dynamic slot, List<String> candidates) {
-    for (final name in candidates) {
-      try {
-        final dyn = slot as dynamic;
-        switch (name) {
-          case 'startTime':
-            return dyn.startTime;
-          case 'start':
-            return dyn.start;
-          case 'timeStart':
-            return dyn.timeStart;
-          case 'slotStart':
-            return dyn.slotStart;
-          case 'start_at':
-            return dyn.start_at;
-          case 'from':
-            return dyn.from;
-          case 'startTimestamp':
-            return dyn.startTimestamp;
-          case 'startMinute':
-            return dyn.startMinute;
-          case 'startMinutes':
-            return dyn.startMinutes;
-          case 'endTime':
-            return dyn.endTime;
-          case 'end':
-            return dyn.end;
-          case 'timeEnd':
-            return dyn.timeEnd;
-          case 'slotEnd':
-            return dyn.slotEnd;
-          case 'end_at':
-            return dyn.end_at;
-          case 'to':
-            return dyn.to;
-          case 'endTimestamp':
-            return dyn.endTimestamp;
-          case 'endMinute':
-            return dyn.endMinute;
-          case 'endMinutes':
-            return dyn.endMinutes;
-          case 'duration':
-            return dyn.duration;
-          case 'length':
-            return dyn.length;
-          case 'durationMinutes':
-            return dyn.durationMinutes;
-          case 'minutes':
-            return dyn.minutes;
-          case 'durasi':
-            return dyn.durasi;
-          case 'timeLength':
-            return dyn.timeLength;
-          // Add more if your model uses different property names.
-        }
-      } catch (_) {
-        // ignore and try next
-      }
-    }
-
-    // If slot is a Map-like object we can try to access keys (useful if slot is a Map)
-    try {
-      if (slot is Map<String, dynamic>) {
-        for (final name in candidates) {
-          if (slot.containsKey(name)) return slot[name];
-        }
-      }
-    } catch (_) {}
-
     return null;
   }
 
-  // Compute end value from start+duration if end wasn't present
-  dynamic _computeEndFromDuration(dynamic startVal, dynamic durationVal) {
-    if (startVal == null || durationVal == null) return null;
-
-    int? minutes;
-    if (durationVal is int) {
-      minutes = durationVal;
-    } else if (durationVal is String) {
-      final asInt = int.tryParse(durationVal);
-      if (asInt != null) {
-        minutes = asInt;
-      } else {
-        // If duration is string "HH:mm" treat this as a time not a length, ignore
-        minutes = null;
-      }
+  // Validasi Nama: harus huruf
+  String? _validateNama(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Nama wajib diisi';
     }
-
-    if (minutes == null) return null;
-
-    if (startVal is Timestamp) {
-      return startVal.toDate().add(Duration(minutes: minutes));
+    if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(value)) {
+      return 'Nama harus berupa huruf';
     }
-    if (startVal is DateTime) {
-      return startVal.add(Duration(minutes: minutes));
+    if (value.trim().length < 3) {
+      return 'Nama minimal 3 karakter';
     }
-    if (startVal is int) {
-      // minutes from midnight
-      return startVal + minutes;
-    }
-    if (startVal is String) {
-      // try parse "HH:mm"
-      final parts = startVal.split(':');
-      if (parts.length == 2) {
-        final h = int.tryParse(parts[0]);
-        final m = int.tryParse(parts[1]);
-        if (h != null && m != null) {
-          final dt = DateTime.now().toUtc().add(
-            Duration(hours: h, minutes: m),
-          ); // arbitrary date
-          final end = dt.add(Duration(minutes: minutes));
-          // return as "HH:mm"
-          return '${end.hour.toString().padLeft(2, '0')}:${end.minute.toString().padLeft(2, '0')}';
-        }
-      }
-    }
-
     return null;
   }
 
-  String _formatSlotTime(SlotModel slot) {
-    final startCandidates = [
-      'startTime',
-      'start',
-      'timeStart',
-      'slotStart',
-      'start_at',
-      'from',
-      'startTimestamp',
-      'startMinute',
-      'startMinutes',
-      'start_min',
-      'time_from',
-    ];
-    final endCandidates = [
-      'endTime',
-      'end',
-      'timeEnd',
-      'slotEnd',
-      'end_at',
-      'to',
-      'endTimestamp',
-      'endMinute',
-      'endMinutes',
-      'end_min',
-      'finish',
-    ];
-
-    final durationCandidates = [
-      'duration',
-      'length',
-      'durationMinutes',
-      'minutes',
-      'durasi',
-      'timeLength',
-      'slotLength',
-      'durasiMenit',
-    ];
-
-    final startVal = _tryGetSlotField(slot, startCandidates);
-    dynamic endVal = _tryGetSlotField(slot, endCandidates);
-
-    // If end not present, try compute using duration
-    if (endVal == null) {
-      final durationVal = _tryGetSlotField(slot, durationCandidates);
-      final computed = _computeEndFromDuration(startVal, durationVal);
-      if (computed != null) {
-        endVal = computed;
-      }
+  // Validasi Jumlah: harus angka dan tidak melebihi kapasitas
+  String? _validateJumlah(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Jumlah orang wajib diisi';
     }
-
-    final startStr = _formatTimeValue(startVal);
-    final endStr = _formatTimeValue(endVal);
-
-    if (startStr.isNotEmpty && endStr.isNotEmpty) {
-      return '$startStr - $endStr';
-    } else if (startStr.isNotEmpty) {
-      return startStr;
-    } else if (endStr.isNotEmpty) {
-      return endStr;
+    
+    final jumlah = int.tryParse(value);
+    if (jumlah == null) {
+      return 'Jumlah harus berupa angka';
     }
-
-    // fallback to slotCode if no time fields found
-    try {
-      return (slot as dynamic).slotCode?.toString() ?? '';
-    } catch (_) {
-      return '';
+    
+    if (jumlah < 1) {
+      return 'Jumlah minimal 1 orang';
     }
+    
+    if (jumlah > widget.lab.labCapacity) {
+      return 'Maksimal ${widget.lab.labCapacity} orang';
+    }
+    
+    return null;
   }
 
-  // Widget input field dengan label gradien ungu sesuai gambar
-  Widget _nimInputField() {
-    return Container(
-      height: 50,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFB5A8D5), width: 1.5),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 110,
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF7A73D1), Color(0xFFB5A8D5)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(12),
-                bottomLeft: Radius.circular(12),
-              ),
-            ),
-            alignment: Alignment.centerLeft,
-            child: const Text(
-              'NIM',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-                fontSize: 16,
-              ),
-            ),
-          ),
-          Expanded(
-            child: TextFormField(
-              controller: nimCtrl,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 14,
-                ),
-                hintText: "2341760025",
-                hintStyle: TextStyle(
-                  fontStyle: FontStyle.italic,
-                  color: Colors.grey,
-                ),
-                border: InputBorder.none,
-              ),
-              style: const TextStyle(fontSize: 16, color: Colors.black),
-              validator: (v) => v == null || v.isEmpty ? "Wajib diisi" : null,
-            ),
-          ),
-        ],
-      ),
-    );
+  // Cek apakah form valid dan checkbox dicentang
+  bool get _isFormValid {
+    return _isAgreed && 
+           _formKey.currentState?.validate() == true;
   }
 
-  Widget _inputFieldWithGradientLabel({
-    required String label,
-    required Widget childInput,
-    double labelWidth = 110,
-  }) {
-    return Container(
-      height: 50,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFB5A8D5), width: 1.5),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: labelWidth,
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF7A73D1), Color(0xFFB5A8D5)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(12),
-                bottomLeft: Radius.circular(12),
-              ),
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-                fontSize: 16,
-              ),
-            ),
-          ),
-          Expanded(child: childInput),
-        ],
-      ),
-    );
-  }
-
-  // MODIFIED: Tambahkan update slot setelah booking berhasil
   Future<void> _submitBooking() async {
-    if (!_formKey.currentState!.validate()) return;
-    if (tujuan == null || tujuan!.isEmpty) {
-      _showSnack("Pilih atau isi tujuan!");
-      return;
-    }
-    if (!isAgree) {
-      _showSnack("Anda harus menyetujui peraturan!");
+    // Validasi form
+    if (!_formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.error_outline, color: Colors.white),
+              SizedBox(width: 8),
+              Text('Mohon lengkapi semua data dengan benar'),
+            ],
+          ),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
       return;
     }
 
-    final userId = FirebaseAuth.instance.currentUser?.uid;
-    if (userId == null) {
-      _showSnack("User tidak login!");
+    // Validasi checkbox
+    if (!_isAgreed) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.warning_amber, color: Colors.white),
+              SizedBox(width: 8),
+              Text('Anda harus menyetujui peraturan terlebih dahulu'),
+            ],
+          ),
+          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
       return;
     }
+
+    setState(() => _isLoading = true);
 
     try {
-      final slotRef = _firestore.collection('Slots').doc(widget.slot.id);
-      final bookCode = await generateBookCode(
-        slotCode: widget.slot.slotCode,
-        date: widget.selectedDate,
-      );
-
-      final booking = BookingModel(
-        id: '',
-        userRef: _firestore.collection('Users').doc(userId),
-        slotRef: slotRef,
-        bookCode: bookCode,
-        bookBy: namaCtrl.text,
-        bookNim: nimCtrl.text,
-        bookPurpose: tujuan!,
-        participantCount: int.tryParse(jumlahCtrl.text) ?? 1,
-        isConfirmed: false,
-        isRejected: false,
-        isPresent: false,
-      );
-
-      // Simpan booking
-      await _firestore.collection('Booking').add(booking.toFirestore());
-
-      // UPDATE SLOT STATUS MENJADI BOOKED
-      await _slotService.updateSlotBookedStatus(
-        slotId: widget.slot.id,
-        isBooked: true,
-      );
-
-      // Show modal upon success
-      if (mounted) {
-        _showPeminjamanBerhasilModal(context);
+      // Get current user ID
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) {
+        throw Exception('User tidak terautentikasi');
       }
 
+      // Try to book slot secara atomic
+      final slotBooked = await _slotService.tryBookSlot(slotId: widget.slot.id);
+      
+      if (!slotBooked) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.error_outline, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text('Slot sudah dibooking oleh orang lain'),
+                ],
+              ),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      // Create booking
+      final result = await _bookingService.createBooking(
+        lab: widget.lab,
+        slot: widget.slot,
+        userId: userId,
+        nama: _namaController.text.trim(),
+        nim: _nimController.text.trim(),
+        tujuan: _selectedTujuan,
+        participantCount: int.parse(_jumlahController.text),
+      );
+
+      if (mounted) {
+        if (result == "SUCCESS") {
+          // Show success dialog
+          await _showSuccessDialog();
+          // Return success to previous screen
+          Navigator.pop(context, "SUCCESS");
+        } else if (result == "SLOT_TIDAK_TERSEDIA") {
+          // Release slot if booking creation failed
+          await _slotService.releaseSlot(slotId: widget.slot.id);
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.error_outline, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text('Slot tidak tersedia'),
+                ],
+              ),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        } else {
+          // Release slot if booking creation failed
+          await _slotService.releaseSlot(slotId: widget.slot.id);
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.error_outline, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text('Gagal membuat peminjaman'),
+                ],
+              ),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
     } catch (e) {
-      _showSnack("Gagal menyimpan: $e");
+      // Release slot on error
+      await _slotService.releaseSlot(slotId: widget.slot.id);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(child: Text('Error: $e')),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
-  Future<String> generateBookCode({
-    required String slotCode,
-    required DateTime date,
-  }) async {
-    final tanggal =
-        "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
-
-    final snap = await FirebaseFirestore.instance.collection("Booking").get();
-    final nomorUrut = (snap.docs.length + 1).toString().padLeft(4, '0');
-
-    return "$slotCode/$tanggal/$nomorUrut";
-  }
-
-  void _showSnack(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
-  }
-
-  // MODIFIED: Tambahkan Navigator.pop dengan result "SUCCESS"
-  void _showPeminjamanBerhasilModal(BuildContext parentContext) {
-    showDialog(
-      context: parentContext,
-      barrierDismissible: false, // Prevent dismiss by tapping outside
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: const Text(
-            "Peminjaman Berhasil",
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
+  Future<void> _showSuccessDialog() {
+    return showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.check_circle,
+                color: Colors.green,
+                size: 64,
+              ),
             ),
-          ),
-          content: const Text(
-            "Silakan Tunggu Konfirmasi Melalui Notifikasi",
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 16),
-          ),
-          actions: <Widget>[
-            Center(
+            const SizedBox(height: 24),
+            const Text(
+              'Peminjaman Berhasil!',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Pengajuan peminjaman Anda telah dikirim.\nSilakan tunggu konfirmasi dari admin.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade600,
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
               child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF7A73D1),
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                  backgroundColor: const Color(0xFF4D55CC),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  textStyle: const TextStyle(fontWeight: FontWeight.bold),
                 ),
-                onPressed: () {
-                  Navigator.of(dialogContext).pop(); // Tutup modal
-                  Navigator.of(parentContext).pop("SUCCESS"); // RETURN SUCCESS KE SCREEN SEBELUMNYA
-                },
                 child: const Text(
-                  "OK",
-                  style: TextStyle(color: Colors.white),
+                  'OK',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
           ],
-        );
-      },
-    );
-  }
-
-  Widget _buildTextFormField(
-    TextEditingController controller,
-    String hint, {
-    TextInputType keyboardType = TextInputType.text,
-  }) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      decoration: InputDecoration(
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 14,
         ),
-        hintText: hint,
-        hintStyle: const TextStyle(
-          fontStyle: FontStyle.italic,
-          color: Colors.grey,
-        ),
-        border: InputBorder.none,
       ),
-      style: const TextStyle(fontSize: 16, color: Colors.black),
-      validator: (v) => v == null || v.isEmpty ? "Wajib diisi" : null,
     );
   }
 
-  Future<void> _dialogTambahTujuan() async {
-    final TextEditingController ctrl = TextEditingController();
+  String _formatDate(DateTime date) =>
+      '${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}';
 
-    await showDialog<void>(
-      context: context,
-      builder: (context) {
-        return Dialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Tambah Tujuan',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF7A73D1),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: ctrl,
-                  decoration: InputDecoration(
-                    hintText: 'Masukkan tujuan',
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 14,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: Color(0xFFB5A8D5),
-                        width: 2,
-                      ),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: Color(0xFFB5A8D5),
-                        width: 2,
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: Color(0xFF7A73D1),
-                        width: 3,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      style: TextButton.styleFrom(
-                        foregroundColor: const Color(0xFF7A73D1),
-                        textStyle: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Batal'),
-                    ),
-                    const SizedBox(width: 12),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF7A73D1),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 14,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        textStyle: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      onPressed: () {
-                        final text = ctrl.text.trim();
-                        if (text.isNotEmpty) {
-                          setState(() => tujuan = text);
-                          Navigator.of(context).pop();
-                        }
-                      },
-                      child: const Text(
-                        'Simpan',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
+  String _formatTime(DateTime time) =>
+      '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(
-        actions: [],
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: const Text(
+          'SIMPEL',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: const Color(0xFF4D55CC),
+        centerTitle: true,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
+      body: Form(
+        key: _formKey,
+        onChanged: () {
+          // Rebuild to update button state
+          setState(() {});
+        },
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
                 'Detail Peminjaman',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 20),
 
-              // Tampilan Tanggal (read-only)
-              _inputFieldWithGradientLabel(
-                label: 'Tanggal Pinjam',
-                childInput: _displayText(_formatDate(widget.selectedDate)),
+              // Tanggal Pinjam
+              _buildInfoRow(
+                'Tanggal Pinjam',
+                _formatDate(widget.selectedDate),
               ),
-              const SizedBox(height: 14),
 
-              // Tampilan Slot (read-only)
-              _inputFieldWithGradientLabel(
-                label: 'Slot',
-                childInput: _displayText(_formatSlotTime(widget.slot)),
+              // Slot
+              _buildInfoRow(
+                'Slot',
+                '${_formatTime(widget.slot.slotStart)} - ${_formatTime(widget.slot.slotEnd)}',
               ),
-              const SizedBox(height: 14),
 
-              // NIM
-              _nimInputField(),
-              const SizedBox(height: 14),
+              // NIM Field dengan validasi
+              _buildInputField(
+                label: 'NIM',
+                controller: _nimController,
+                hint: 'Masukkan NIM Anda',
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                validator: _validateNIM,
+                helperText: 'NIM minimal 9 digit',
+              ),
 
-              // Nama
-              _inputFieldWithGradientLabel(
+              // Nama Field dengan validasi
+              _buildInputField(
                 label: 'Nama',
-                childInput: _buildTextFormField(namaCtrl, "Masukkan Nama"),
+                controller: _namaController,
+                hint: 'Masukkan nama lengkap',
+                keyboardType: TextInputType.name,
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s]')),
+                ],
+                validator: _validateNama,
+                helperText: 'Nama harus berupa huruf',
               ),
-              const SizedBox(height: 14),
 
-              // Jumlah
-              _inputFieldWithGradientLabel(
+              // Jumlah Field dengan validasi
+              _buildInputField(
                 label: 'Jumlah',
-                childInput: _buildTextFormField(
-                  jumlahCtrl,
-                  "Masukkan jumlah orang",
-                  keyboardType: TextInputType.number,
-                ),
+                controller: _jumlahController,
+                hint: 'Jumlah peserta',
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                validator: _validateJumlah,
+                helperText: 'Maksimal ${widget.lab.labCapacity} orang',
               ),
-              const SizedBox(height: 14),
 
-              // Tujuan
-              _inputFieldWithGradientLabel(
-                label: 'Tujuan',
-                childInput: DropdownButtonFormField<String>(
-                  value: tujuan,
-                  decoration: const InputDecoration(
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 14,
-                    ),
-                    border: InputBorder.none,
-                    hintText: "Pilih Tujuan",
-                    hintStyle: TextStyle(
-                      fontStyle: FontStyle.italic,
-                      color: Colors.grey,
-                    ),
-                  ),
-                  items: const [
-                    DropdownMenuItem(
-                      value: "Kelas Pengganti",
-                      child: Text("Kelas Pengganti"),
-                    ),
-                    DropdownMenuItem(
-                      value: "Kerja Kelompok",
-                      child: Text("Kerja Kelompok"),
-                    ),
-                  ],
-                  onChanged: (v) {
-                    if (v == "Lainnya") {
-                      _dialogTambahTujuan();
-                    } else {
-                      setState(() => tujuan = v);
-                    }
-                  },
-                  validator: (v) => v == null ? "Wajib dipilih" : null,
-                ),
-              ),
-              const SizedBox(height: 24),
+              // Tujuan Dropdown
+              _buildDropdownField(),
+
+              const SizedBox(height: 25),
 
               // Peraturan
-              Card(
-                color: Colors.white,
-                elevation: 4,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                margin: EdgeInsets.zero,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "Peraturan:",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      const Text(
-                        "• Dilarang makan di dalam lab\n"
-                        "• Dilarang menggunakan Lab melebihi kapasitas\n"
-                        "• Menjaga kebersihan lab\n"
-                        "• Mengembalikan barang yang telah dipinjam seperti semula\n"
-                        "• Tidak menggunakan lab melebihi durasi slot yang tersedia\n"
-                        "• Melakukan konfirmasi kehadiran pada asisten Lab",
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Checkbox(
-                            value: isAgree,
-                            onChanged: (v) => setState(() => isAgree = v!),
-                          ),
-                          const Expanded(
-                            child: Text(
-                              "*Saya bersedia mematuhi peraturan yang berlaku.",
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              _buildPeraturanSection(),
 
               const SizedBox(height: 20),
 
-              // Tombol Submit
-              SizedBox(
-                width: double.infinity,
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [
-                        Color(0xFF4D55CC),
-                        Color(0xFF7A73D1),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      shadowColor: Colors.transparent,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    onPressed: _submitBooking,
-                    child: const Text(
-                      "Lakukan Peminjaman",
-                      style: TextStyle(fontSize: 18, color: Colors.white),
-                    ),
-                  ),
-                ),
-              ),
+              // Checkbox Persetujuan
+              _buildAgreementCheckbox(),
+
+              const SizedBox(height: 30),
+
+              // Submit Button
+              _buildSubmitButton(),
             ],
           ),
         ),
@@ -808,11 +442,310 @@ class _PeminjamanFormScreenState extends State<PeminjamanFormScreen> {
     );
   }
 
-  @override
-  void dispose() {
-    namaCtrl.dispose();
-    nimCtrl.dispose();
-    jumlahCtrl.dispose();
-    super.dispose();
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Row(
+        children: [
+          Container(
+            width: 115,
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF7986CB),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 15),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: Text(
+                value,
+                style: const TextStyle(fontSize: 14, color: Colors.black87),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInputField({
+    required String label,
+    required TextEditingController controller,
+    required String hint,
+    required TextInputType keyboardType,
+    required List<TextInputFormatter> inputFormatters,
+    required String? Function(String?) validator,
+    String? helperText,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 115,
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF7986CB),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextFormField(
+                  controller: controller,
+                  keyboardType: keyboardType,
+                  inputFormatters: inputFormatters,
+                  validator: validator,
+                  decoration: InputDecoration(
+                    hintText: hint,
+                    hintStyle: TextStyle(color: Colors.grey.shade400),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 15,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: Colors.grey.shade400),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: Colors.grey.shade400),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(
+                        color: Color(0xFF4D55CC),
+                        width: 2,
+                      ),
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Colors.red),
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(
+                        color: Colors.red,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                ),
+                if (helperText != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4, left: 4),
+                    child: Text(
+                      helperText,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDropdownField() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 115,
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF7986CB),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Text(
+              'Tujuan',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 15),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.grey.shade400),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: _selectedTujuan,
+                  isExpanded: true,
+                  icon: const Icon(Icons.arrow_drop_down),
+                  style: const TextStyle(fontSize: 14, color: Colors.black87),
+                  onChanged: (String? newValue) {
+                    if (newValue != null) {
+                      setState(() => _selectedTujuan = newValue);
+                    }
+                  },
+                  items: _tujuanOptions.map((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPeraturanSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Peraturan:',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 10),
+        _buildPeraturanItem('Dilarang makan di dalam lab'),
+        _buildPeraturanItem('Dilarang menggunakan Lab melebihi kapasitas'),
+        _buildPeraturanItem('Menjaga kebersihan lab'),
+        _buildPeraturanItem(
+            'Mengembalikan barang yang telah dipinjam seperti semula'),
+        _buildPeraturanItem(
+            'Tidak menggunakan lab melebihi durasi slot yang tersedia'),
+        _buildPeraturanItem(
+            'Melakukan konfirmasi kehadiran pada asisten Lab'),
+      ],
+    );
+  }
+
+  Widget _buildPeraturanItem(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('• ', style: TextStyle(fontSize: 14)),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(fontSize: 14),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAgreementCheckbox() {
+    return Row(
+      children: [
+        SizedBox(
+          width: 24,
+          height: 24,
+          child: Checkbox(
+            value: _isAgreed,
+            onChanged: (bool? value) {
+              setState(() => _isAgreed = value ?? false);
+            },
+            activeColor: const Color(0xFF4D55CC),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        const Expanded(
+          child: Text(
+            '*Saya bersedia mematuhi peraturan yang berlaku.',
+            style: TextStyle(fontSize: 13),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSubmitButton() {
+    final isValid = _isFormValid;
+    
+    return SizedBox(
+      width: double.infinity,
+      height: 50,
+      child: ElevatedButton(
+        onPressed: (isValid && !_isLoading) ? _submitBooking : null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isValid 
+              ? const Color(0xFF4D55CC) 
+              : Colors.grey.shade300,
+          disabledBackgroundColor: Colors.grey.shade300,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),
+          elevation: isValid ? 2 : 0,
+        ),
+        child: _isLoading
+            ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : Text(
+                'Lakukan Peminjaman',
+                style: TextStyle(
+                  color: isValid ? Colors.white : Colors.grey.shade600,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+      ),
+    );
   }
 }

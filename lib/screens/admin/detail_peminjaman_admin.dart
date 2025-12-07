@@ -62,7 +62,6 @@ class DetailPeminjamanAdmin extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Tombol Kembali
                 GestureDetector(
                   onTap: () => Navigator.pop(context),
                   child: Row(
@@ -88,7 +87,6 @@ class DetailPeminjamanAdmin extends StatelessWidget {
 
                 const SizedBox(height: 20),
 
-                // Judul Peminjaman
                 RichText(
                   text: TextSpan(
                     style: const TextStyle(
@@ -118,7 +116,6 @@ class DetailPeminjamanAdmin extends StatelessWidget {
 
                 const SizedBox(height: 25),
 
-                // Info Tanggal dan Slot
                 _buildFigmaRow(
                   "Tanggal Pinjam",
                   "${slotStart.day}-${slotStart.month}-${slotStart.year}",
@@ -133,7 +130,6 @@ class DetailPeminjamanAdmin extends StatelessWidget {
 
                 const SizedBox(height: 25),
 
-                // Detail Peminjaman
                 const Text(
                   "Detail Peminjaman",
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -148,7 +144,6 @@ class DetailPeminjamanAdmin extends StatelessWidget {
                 ),
                 _buildFigmaRow("Tujuan", booking.bookPurpose),
 
-                // Status Kehadiran (hanya muncul jika sudah dikonfirmasi)
                 if (booking.isConfirmed) ...[
                   const SizedBox(height: 25),
                   const Text(
@@ -164,11 +159,9 @@ class DetailPeminjamanAdmin extends StatelessWidget {
 
                 const SizedBox(height: 40),
 
-                // Tombol Konfirmasi dan Tolak (hanya muncul jika belum dikonfirmasi/ditolak)
                 if (showButtons)
                   Column(
                     children: [
-                      // Tombol Konfirmasi
                       SizedBox(
                         width: double.infinity,
                         height: 50,
@@ -238,7 +231,6 @@ class DetailPeminjamanAdmin extends StatelessWidget {
                       
                       const SizedBox(height: 15),
                       
-                      // Tombol Tolak
                       SizedBox(
                         width: double.infinity,
                         height: 50,
@@ -251,11 +243,9 @@ class DetailPeminjamanAdmin extends StatelessWidget {
                               confirmColor: Colors.redAccent,
                               onYes: () async {
                                 try {
-                                  // Ambil slotId dan kembalikan slot menggunakan method atomic
                                   final slotId = await bookingService.setRejected(booking.id);
                                   
                                   if (slotId != null) {
-                                    // Gunakan releaseSlot yang lebih aman dengan transaksi
                                     final success = await slotService.releaseSlot(slotId: slotId);
                                     
                                     if (!success && context.mounted) {
@@ -353,13 +343,11 @@ class DetailPeminjamanAdmin extends StatelessWidget {
     );
   }
 
-  // Widget untuk baris informasi dengan desain Figma
   Widget _buildFigmaRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
       child: Row(
         children: [
-          // Label container
           Container(
             width: 130,
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
@@ -380,7 +368,6 @@ class DetailPeminjamanAdmin extends StatelessWidget {
 
           const SizedBox(width: 10),
 
-          // Value container
           Expanded(
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 15),
@@ -400,7 +387,6 @@ class DetailPeminjamanAdmin extends StatelessWidget {
     );
   }
 
-  // Dialog konfirmasi yang lebih baik
   Future<void> showConfirmDialog({
     required BuildContext context,
     required String title,
@@ -421,7 +407,6 @@ class DetailPeminjamanAdmin extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Icon
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -437,7 +422,6 @@ class DetailPeminjamanAdmin extends StatelessWidget {
                 
                 const SizedBox(height: 20),
                 
-                // Title
                 Text(
                   title,
                   textAlign: TextAlign.center,
@@ -449,10 +433,8 @@ class DetailPeminjamanAdmin extends StatelessWidget {
                 
                 const SizedBox(height: 30),
 
-                // Buttons
                 Row(
                   children: [
-                    // Tombol Batal
                     Expanded(
                       child: SizedBox(
                         height: 48,
@@ -478,7 +460,6 @@ class DetailPeminjamanAdmin extends StatelessWidget {
 
                     const SizedBox(width: 15),
 
-                    // Tombol Konfirmasi/Tolak
                     Expanded(
                       child: SizedBox(
                         height: 48,

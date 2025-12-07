@@ -62,7 +62,7 @@ class BookingService {
         .toList();
   }
 
-  // Create booking (tanpa update slot, akan dihandle di screen)
+  // FIXED: Check active bookings, not just slot status
   Future<String> createBooking({
     required LabModel lab,
     required SlotModel slot,
@@ -76,12 +76,37 @@ class BookingService {
       final slotRef = _firestore.doc("Slots/${slot.id}");
       final userRef = _firestore.doc("Users/$userId");
 
-      // Double check slot masih available
-      final slotDoc = await slotRef.get();
-      if (slotDoc.exists && slotDoc["is_booked"] == true) {
+      // ✅ PERBAIKAN: Check apakah ada booking AKTIF (not rejected) untuk slot ini
+      final existingBookings = await _firestore
+          .collection(_collectionName)
+          .where("slotId", isEqualTo: slotRef)
+          .where("is_rejected", isEqualTo: false) // ← KUNCI: Ignore rejected bookings
+          .get();
+
+      // Jika ada booking aktif (confirmed atau pending), slot tidak tersedia
+      if (existingBookings.docs.isNotEmpty) {
+        print("Found ${existingBookings.docs.length} active booking(s) for this slot");
         return "SLOT_TIDAK_TERSEDIA";
       }
 
+      // Double check slot status di Firestore
+      final slotDoc = await slotRef.get();
+      if (!slotDoc.exists) {
+        return "SLOT_TIDAK_DITEMUKAN";
+      }
+
+      final slotData = slotDoc.data() as Map<String, dynamic>?;
+      if (slotData == null) {
+        return "SLOT_TIDAK_DITEMUKAN";
+      }
+
+      // Check if slot is open
+      final isOpen = slotData['is_open'] ?? true;
+      if (!isOpen) {
+        return "SLOT_DITUTUP";
+      }
+
+      // Generate booking code
       final dayStart = DateTime(
         slot.slotStart.year,
         slot.slotStart.month,
@@ -102,6 +127,7 @@ class BookingService {
 
       final bookCode = "${slot.slotCode}/$tanggalFormat/$nomorUrut";
 
+      // Create booking
       await _firestore.collection(_collectionName).add({
         "book_by": nama,
         "book_nim": nim,
@@ -122,6 +148,7 @@ class BookingService {
         "createdAt": FieldValue.serverTimestamp(),
       });
 
+      print("Booking created successfully: $bookCode");
       return "SUCCESS";
     } catch (e) {
       print("Error creating booking: $e");
@@ -179,23 +206,19 @@ class BookingService {
     }
   }
 
-  // Return slotId untuk keperluan update slot
   Future<String?> setRejected(String bookingId) async {
     try {
-      // Ambil data booking dulu untuk mendapatkan slotId
       final bookingDoc = await _firestore.collection(_collectionName).doc(bookingId).get();
       
       if (!bookingDoc.exists) return null;
       
       final slotRef = bookingDoc.data()?['slotId'] as DocumentReference?;
       
-      // Update booking status
       await _firestore.collection(_collectionName).doc(bookingId).update({
         'is_confirmed': false,
         'is_rejected': true,
       });
       
-      // Return slotId untuk diupdate di caller
       return slotRef?.id;
     } catch (e) {
       print("Error rejecting booking: $e");
@@ -203,7 +226,6 @@ class BookingService {
     }
   }
 
-  // Hitung pengajuan yg belum di konfirmasi
   Stream<int> getPendingBookingsCountWeekly() {
     final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
     return _firestore
@@ -215,7 +237,6 @@ class BookingService {
         .map((snapshot) => snapshot.docs.length);
   }
 
-  /// Hitung jumlah SEMUA Booking (dikonfirmasi, di rejected dan disetujui)
   Stream<int> getAllBookingsCountWeekly() {
     final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
 
@@ -226,7 +247,6 @@ class BookingService {
         .map((snapshot) => snapshot.docs.length);
   }
 
-  //  LAB paling banyak dipinjam
   Stream<Map<String, int>> getMostBorrowedLabWeekly() {
     final today = DateTime.now();
     final sevenDaysAgo = today.subtract(const Duration(days: 7));
