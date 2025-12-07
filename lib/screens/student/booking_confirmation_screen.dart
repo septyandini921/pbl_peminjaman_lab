@@ -450,7 +450,7 @@ void _showPeminjamanBerhasilModal(BuildContext parentContext) {
           ),
         ),
         content: const Text(
-          "Silakan Tunggu Konfirmasi dalam ± 48 Jam Melalui Notifikasi",
+          "Silakan Tunggu Konfirmasi Melalui Notifikasi",
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 16),
         ),
@@ -690,10 +690,6 @@ Future<void> _dialogTambahTujuan() async {
                     DropdownMenuItem(
                       value: "Kerja Kelompok",
                       child: Text("Kerja Kelompok"),
-                    ),
-                    DropdownMenuItem(
-                      value: "Lainnya",
-                      child: Text("Tambah tujuan baru..."),
                     ),
                   ],
                   onChanged: (v) {
