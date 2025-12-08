@@ -117,14 +117,14 @@ Future<void> _loadUserName() async {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               StreamBuilder<int>(
-                stream: _bookingService.getConfirmedBookingsCountWeekly(),
+                stream: _bookingService.getAllBookingsCountWeekly(),
                 builder: (context, snapshot) {
                   final value = snapshot.data?.toString() ?? "0";
                   return _statBox(value, "Pengajuan");
                 },
               ),
               StreamBuilder<int>(
-                stream: _bookingService.getAllBookingsCountWeekly(),
+                stream: _bookingService.getConfirmedBookingsCountWeekly(),
                 builder: (context, snapshot) {
                   final value = snapshot.data?.toString() ?? "0";
                   return _statBox(value, "Peminjaman");
