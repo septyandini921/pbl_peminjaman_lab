@@ -4,6 +4,8 @@ import '../../service/user_service.dart';
 import '../../models/user/user_model.dart';
 import '../../widgets/admin_bottom_navbar.dart';
 import '../../widgets/app_bar.dart';
+import '../../auth/auth_controller.dart';
+import '../auth/login_screen.dart';
 import 'admin_edit_profil.dart';
 
 class ProfilAdminScreen extends StatefulWidget {
@@ -40,6 +42,14 @@ class _ProfilAdminScreenState extends State<ProfilAdminScreen> {
     await loadUser();
   }
 
+  Future<void> _logout(BuildContext context) async {
+    await AuthController.instance.signOut();
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -64,7 +74,6 @@ class _ProfilAdminScreenState extends State<ProfilAdminScreen> {
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 20),
-
                   GestureDetector(
                     onTap: goToEdit,
                     child: Container(
@@ -105,20 +114,76 @@ class _ProfilAdminScreenState extends State<ProfilAdminScreen> {
                               ],
                             ),
                           ),
-
-                          GestureDetector(
-                            onTap: goToEdit,
-                            child: const Icon(Icons.edit,
-                                size: 22, color: Colors.grey),
-                          ),
+                          const Icon(Icons.edit,
+                              size: 22, color: Colors.grey),
                         ],
                       ),
                     ),
                   ),
-                ],
-              ),
+
+                const SizedBox(height: 30),
+                ElevatedButton(
+                  onPressed: () async {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text("Logout"),
+                        content: const Text("Apakah Anda yakin ingin keluar?"),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text("Tidak"),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            child: const Text("Ya"),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirm == true) {
+                      _logout(context);
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                  ),
+                  child: Ink(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [
+                          Color(0xFF4D55CC),
+                          Color(0xFF7A73D1),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Container(
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      child: const Text(
+                        "Logout",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-      bottomNavigationBar: const BottomNavBar(currentIndex: 3),
+          ),
+  bottomNavigationBar: const BottomNavBar(currentIndex: 3),
     );
   }
 }
+

@@ -1,10 +1,11 @@
+//C:\Kuliah\semester5\Moblie\PBL\pbl_peminjaman_lab\lib\screens\student\booking_confirmation_screen.dart
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
-import '../../../models/labs/lab_model.dart';
-import '../../../models/slots/slot_model.dart';
-import '../../models/booking/booking_model.dart';
+import '../../models/labs/lab_model.dart';
+import '../../models/slots/slot_model.dart';
+import '../../service/booking_service.dart';
+import '../../service/slot_service.dart';
 
 class PeminjamanFormScreen extends StatefulWidget {
   final LabModel lab;
@@ -24,262 +25,416 @@ class PeminjamanFormScreen extends StatefulWidget {
 
 class _PeminjamanFormScreenState extends State<PeminjamanFormScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _nimController = TextEditingController();
+  final _namaController = TextEditingController();
+  final _jumlahController = TextEditingController();
+  
+  String _selectedTujuan = 'Kelas Pengganti';
+  bool _isAgreed = false;
+  bool _isLoading = false;
 
-  final TextEditingController namaCtrl = TextEditingController();
-  final TextEditingController nimCtrl = TextEditingController();
-  final TextEditingController jumlahCtrl = TextEditingController();
-  bool isAgree = false;
+  final List<String> _tujuanOptions = [
+    'Kelas Pengganti',
+    'Praktikum',
+    'Penelitian',
+    'Rapat',
+    'Lainnya',
+  ];
 
-  String? tujuan;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final BookingService _bookingService = BookingService();
+  final SlotService _slotService = SlotService();
+
+  @override
+  void dispose() {
+    _nimController.dispose();
+    _namaController.dispose();
+    _jumlahController.dispose();
+    super.dispose();
+  }
+
+  // Validasi NIM: harus angka minimal 9 digit
+  String? _validateNIM(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'NIM wajib diisi';
+    }
+    if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
+      return 'NIM harus berupa angka';
+    }
+    if (value.length < 9) {
+      return 'NIM minimal 9 digit';
+    }
+    return null;
+  }
+
+  // Validasi Nama: harus huruf
+  String? _validateNama(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Nama wajib diisi';
+    }
+    if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(value)) {
+      return 'Nama harus berupa huruf';
+    }
+    if (value.trim().length < 3) {
+      return 'Nama minimal 3 karakter';
+    }
+    return null;
+  }
+
+  // Validasi Jumlah: harus angka dan tidak melebihi kapasitas
+  String? _validateJumlah(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Jumlah orang wajib diisi';
+    }
+    
+    final jumlah = int.tryParse(value);
+    if (jumlah == null) {
+      return 'Jumlah harus berupa angka';
+    }
+    
+    if (jumlah < 1) {
+      return 'Jumlah minimal 1 orang';
+    }
+    
+    if (jumlah > widget.lab.labCapacity) {
+      return 'Maksimal ${widget.lab.labCapacity} orang';
+    }
+    
+    return null;
+  }
+
+  // Cek apakah form valid dan checkbox dicentang
+  bool get _isFormValid {
+    return _isAgreed && 
+           _formKey.currentState?.validate() == true;
+  }
 
   Future<void> _submitBooking() async {
-    if (!_formKey.currentState!.validate()) return;
-    if (tujuan == null || tujuan!.isEmpty) {
-      _showSnack("Pilih atau isi tujuan!");
-      return;
-    }
-    if (!isAgree) {
-      _showSnack("Anda harus menyetujui peraturan!");
+    // Validasi form
+    if (!_formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.error_outline, color: Colors.white),
+              SizedBox(width: 8),
+              Text('Mohon lengkapi semua data dengan benar'),
+            ],
+          ),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
       return;
     }
 
-    final userId = FirebaseAuth.instance.currentUser?.uid;
-    if (userId == null) {
-      _showSnack("User tidak login!");
+    // Validasi checkbox
+    if (!_isAgreed) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.warning_amber, color: Colors.white),
+              SizedBox(width: 8),
+              Text('Anda harus menyetujui peraturan terlebih dahulu'),
+            ],
+          ),
+          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
       return;
     }
+
+    setState(() => _isLoading = true);
 
     try {
-      final slotRef = _firestore.collection('Slots').doc(widget.slot.id);
-      final bookCode = await generateBookCode(
-        slotCode: widget.slot.slotCode,
-        date: widget.selectedDate,
+      // Get current user ID
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) {
+        throw Exception('User tidak terautentikasi');
+      }
+
+      // Try to book slot secara atomic
+      final slotBooked = await _slotService.tryBookSlot(slotId: widget.slot.id);
+      
+      if (!slotBooked) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.error_outline, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text('Slot sudah dibooking oleh orang lain'),
+                ],
+              ),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      // Create booking
+      final result = await _bookingService.createBooking(
+        lab: widget.lab,
+        slot: widget.slot,
+        userId: userId,
+        nama: _namaController.text.trim(),
+        nim: _nimController.text.trim(),
+        tujuan: _selectedTujuan,
+        participantCount: int.parse(_jumlahController.text),
       );
 
-      final booking = BookingModel(
-        id: '',
-        userId: _firestore.collection('Users').doc(userId),
-        slotRef: slotRef,
-        bookCode: bookCode,
-        bookBy: namaCtrl.text,
-        bookNim: nimCtrl.text,
-        bookPurpose: tujuan!,
-        isConfirmed: false,
-        isPresent: false,
-      );
-
-      await _firestore.collection('Booking').add(booking.toMap());
-
-      _showSnack("Peminjaman berhasil diajukan!");
-      Navigator.pop(context);
-      Navigator.pop(context);
+      if (mounted) {
+        if (result == "SUCCESS") {
+          // Show success dialog
+          await _showSuccessDialog();
+          // Return success to previous screen
+          Navigator.pop(context, "SUCCESS");
+        } else if (result == "SLOT_TIDAK_TERSEDIA") {
+          // Release slot if booking creation failed
+          await _slotService.releaseSlot(slotId: widget.slot.id);
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.error_outline, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text('Slot tidak tersedia'),
+                ],
+              ),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        } else {
+          // Release slot if booking creation failed
+          await _slotService.releaseSlot(slotId: widget.slot.id);
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.error_outline, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text('Gagal membuat peminjaman'),
+                ],
+              ),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
     } catch (e) {
-      _showSnack("Gagal menyimpan: $e");
+      // Release slot on error
+      await _slotService.releaseSlot(slotId: widget.slot.id);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(child: Text('Error: $e')),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
-  Future<String> generateBookCode({
-    required String slotCode,
-    required DateTime date,
-  }) async {
-    final tanggal =
-        "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
-
-    final snap = await FirebaseFirestore.instance.collection("Booking").get();
-
-    final nomorUrut = (snap.docs.length + 1).toString().padLeft(4, '0');
-
-    return "$slotCode/$tanggal/$nomorUrut";
-  }
-
-  void _showSnack(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  void _dialogTambahTujuan() {
-    final ctrl = TextEditingController();
-    showDialog(
+  Future<void> _showSuccessDialog() {
+    return showDialog(
       context: context,
-      builder: (c) => AlertDialog(
-        title: const Text("Tambah Tujuan Baru"),
-        content: TextField(
-          controller: ctrl,
-          decoration: const InputDecoration(hintText: "Masukkan tujuan"),
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(c),
-            child: const Text("Batal"),
-          ),
-          TextButton(
-            onPressed: () {
-              setState(() => tujuan = ctrl.text);
-              Navigator.pop(c);
-            },
-            child: const Text("Simpan"),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _fieldCard({required String label, required Widget child}) {
-    return Card(
-      elevation: 3,
-      margin: const EdgeInsets.only(bottom: 14),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              label,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.check_circle,
+                color: Colors.green,
+                size: 64,
+              ),
             ),
-            const SizedBox(height: 6),
-            child,
+            const SizedBox(height: 24),
+            const Text(
+              'Peminjaman Berhasil!',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Pengajuan peminjaman Anda telah dikirim.\nSilakan tunggu konfirmasi dari admin.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade600,
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF4D55CC),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'OK',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
+  String _formatDate(DateTime date) =>
+      '${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}';
+
+  String _formatTime(DateTime time) =>
+      '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text("Detail Peminjaman"),
-        backgroundColor: const Color(0xFF3949AB),
+        title: const Text(
+          'SIMPEL',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: const Color(0xFF4D55CC),
+        centerTitle: true,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
+      body: Form(
+        key: _formKey,
+        onChanged: () {
+          // Rebuild to update button state
+          setState(() {});
+        },
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _fieldCard(
-                label: "Nama",
-                child: TextFormField(
-                  controller: namaCtrl,
-                  decoration: _inputDecoration("Masukkan Nama"),
-                  validator: (v) => v!.isEmpty ? "Wajib diisi" : null,
+              const Text(
+                'Detail Peminjaman',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-              _fieldCard(
-                label: "NIM",
-                child: TextFormField(
-                  controller: nimCtrl,
-                  decoration: _inputDecoration("Masukkan NIM"),
-                  validator: (v) => v!.isEmpty ? "Wajib diisi" : null,
-                ),
-              ),
-              _fieldCard(
-                label: "Jumlah Orang",
-                child: TextFormField(
-                  controller: jumlahCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: _inputDecoration("0"),
-                  validator: (v) => v!.isEmpty ? "Wajib diisi" : null,
-                ),
+              const SizedBox(height: 20),
+
+              // Tanggal Pinjam
+              _buildInfoRow(
+                'Tanggal Pinjam',
+                _formatDate(widget.selectedDate),
               ),
 
-              _fieldCard(
-                label: "Tujuan",
-                child: DropdownButtonFormField<String>(
-                  value: tujuan,
-                  decoration: _inputDecoration("Pilih Tujuan"),
-                  items: const [
-                    DropdownMenuItem(
-                      value: "Kelas Pengganti",
-                      child: Text("Kelas Pengganti"),
-                    ),
-                    DropdownMenuItem(
-                      value: "Kerja Kelompok",
-                      child: Text("Kerja Kelompok"),
-                    ),
-                    DropdownMenuItem(
-                      value: "Lainnya",
-                      child: Text("Tambah tujuan baru..."),
-                    ),
-                  ],
-                  onChanged: (v) {
-                    if (v == "Lainnya") {
-                      _dialogTambahTujuan();
-                    } else {
-                      setState(() => tujuan = v);
-                    }
-                  },
-                  validator: (v) => v == null ? "Wajib dipilih" : null,
-                ),
+              // Slot
+              _buildInfoRow(
+                'Slot',
+                '${_formatTime(widget.slot.slotStart)} - ${_formatTime(widget.slot.slotEnd)}',
               ),
 
-              // PERATURAN
-              Card(
-                elevation: 3,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "Peraturan:",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      const Text(
-                        "• Menggunakan laboratorium sesuai jadwal.\n"
-                        "• Menjaga kebersihan dan keamanan alat.\n"
-                        "• Tidak membawa barang lab tanpa izin.\n"
-                        "• Bertanggung jawab atas kerusakan.\n"
-                        "• Mengembalikan tepat waktu.\n",
-                      ),
-                      Row(
-                        children: [
-                          Checkbox(
-                            value: isAgree,
-                            onChanged: (v) => setState(() => isAgree = v!),
-                          ),
-                          const Expanded(
-                            child: Text(
-                              "Saya setuju dengan aturan yang berlaku.",
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
+              // NIM Field dengan validasi
+              _buildInputField(
+                label: 'NIM',
+                controller: _nimController,
+                hint: 'Masukkan NIM Anda',
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                validator: _validateNIM,
+                helperText: 'NIM minimal 9 digit',
               ),
+
+              // Nama Field dengan validasi
+              _buildInputField(
+                label: 'Nama',
+                controller: _namaController,
+                hint: 'Masukkan nama lengkap',
+                keyboardType: TextInputType.name,
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s]')),
+                ],
+                validator: _validateNama,
+                helperText: 'Nama harus berupa huruf',
+              ),
+
+              // Jumlah Field dengan validasi
+              _buildInputField(
+                label: 'Jumlah',
+                controller: _jumlahController,
+                hint: 'Jumlah peserta',
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                validator: _validateJumlah,
+                helperText: 'Maksimal ${widget.lab.labCapacity} orang',
+              ),
+
+              // Tujuan Dropdown
+              _buildDropdownField(),
+
+              const SizedBox(height: 25),
+
+              // Peraturan
+              _buildPeraturanSection(),
 
               const SizedBox(height: 20),
 
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _submitBooking,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF3949AB),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  child: const Text(
-                    "Ajukan Peminjaman",
-                    style: TextStyle(fontSize: 18, color: Colors.white),
-                  ),
-                ),
-              ),
+              // Checkbox Persetujuan
+              _buildAgreementCheckbox(),
+
+              const SizedBox(height: 30),
+
+              // Submit Button
+              _buildSubmitButton(),
             ],
           ),
         ),
@@ -287,15 +442,309 @@ class _PeminjamanFormScreenState extends State<PeminjamanFormScreen> {
     );
   }
 
-  InputDecoration _inputDecoration(String hint) {
-    return InputDecoration(
-      hintText: hint,
-      filled: true,
-      fillColor: const Color(0xFFF3F3F3),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide.none,
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Row(
+        children: [
+          Container(
+            width: 115,
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF7986CB),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 15),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: Text(
+                value,
+                style: const TextStyle(fontSize: 14, color: Colors.black87),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInputField({
+    required String label,
+    required TextEditingController controller,
+    required String hint,
+    required TextInputType keyboardType,
+    required List<TextInputFormatter> inputFormatters,
+    required String? Function(String?) validator,
+    String? helperText,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 115,
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF7986CB),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextFormField(
+                  controller: controller,
+                  keyboardType: keyboardType,
+                  inputFormatters: inputFormatters,
+                  validator: validator,
+                  decoration: InputDecoration(
+                    hintText: hint,
+                    hintStyle: TextStyle(color: Colors.grey.shade400),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 15,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: Colors.grey.shade400),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: Colors.grey.shade400),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(
+                        color: Color(0xFF4D55CC),
+                        width: 2,
+                      ),
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Colors.red),
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(
+                        color: Colors.red,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                ),
+                if (helperText != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4, left: 4),
+                    child: Text(
+                      helperText,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDropdownField() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 115,
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF7986CB),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Text(
+              'Tujuan',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 15),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.grey.shade400),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: _selectedTujuan,
+                  isExpanded: true,
+                  icon: const Icon(Icons.arrow_drop_down),
+                  style: const TextStyle(fontSize: 14, color: Colors.black87),
+                  onChanged: (String? newValue) {
+                    if (newValue != null) {
+                      setState(() => _selectedTujuan = newValue);
+                    }
+                  },
+                  items: _tujuanOptions.map((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPeraturanSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Peraturan:',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 10),
+        _buildPeraturanItem('Dilarang makan di dalam lab'),
+        _buildPeraturanItem('Dilarang menggunakan Lab melebihi kapasitas'),
+        _buildPeraturanItem('Menjaga kebersihan lab'),
+        _buildPeraturanItem(
+            'Mengembalikan barang yang telah dipinjam seperti semula'),
+        _buildPeraturanItem(
+            'Tidak menggunakan lab melebihi durasi slot yang tersedia'),
+        _buildPeraturanItem(
+            'Melakukan konfirmasi kehadiran pada asisten Lab'),
+      ],
+    );
+  }
+
+  Widget _buildPeraturanItem(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('• ', style: TextStyle(fontSize: 14)),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(fontSize: 14),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAgreementCheckbox() {
+    return Row(
+      children: [
+        SizedBox(
+          width: 24,
+          height: 24,
+          child: Checkbox(
+            value: _isAgreed,
+            onChanged: (bool? value) {
+              setState(() => _isAgreed = value ?? false);
+            },
+            activeColor: const Color(0xFF4D55CC),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        const Expanded(
+          child: Text(
+            '*Saya bersedia mematuhi peraturan yang berlaku.',
+            style: TextStyle(fontSize: 13),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSubmitButton() {
+    final isValid = _isFormValid;
+    
+    return SizedBox(
+      width: double.infinity,
+      height: 50,
+      child: ElevatedButton(
+        onPressed: (isValid && !_isLoading) ? _submitBooking : null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isValid 
+              ? const Color(0xFF4D55CC) 
+              : Colors.grey.shade300,
+          disabledBackgroundColor: Colors.grey.shade300,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),
+          elevation: isValid ? 2 : 0,
+        ),
+        child: _isLoading
+            ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : Text(
+                'Lakukan Peminjaman',
+                style: TextStyle(
+                  color: isValid ? Colors.white : Colors.grey.shade600,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
       ),
     );
   }

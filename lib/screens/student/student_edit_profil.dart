@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import '../../models/user/user_model.dart';
 import '../../service/user_service.dart';
 
-class AdminEditProfilScreen extends StatefulWidget {
-  const AdminEditProfilScreen({super.key});
+class StudentEditProfilScreen extends StatefulWidget {
+  const StudentEditProfilScreen({super.key});
 
   @override
-  State<AdminEditProfilScreen> createState() => _AdminEditProfilScreenState();
+  State<StudentEditProfilScreen> createState() => _StudentEditProfilScreenState();
 }
 
-class _AdminEditProfilScreenState extends State<AdminEditProfilScreen> {
+class _StudentEditProfilScreenState extends State<StudentEditProfilScreen> {
   late UserModel user;
   final userService = UserService();
 
@@ -33,19 +33,20 @@ class _AdminEditProfilScreenState extends State<AdminEditProfilScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F6FF),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0.5,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
-        centerTitle: true,
-        title: const Text(
-          "Edit Profil",
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
+
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(60),
+        child: AppBar(
+          elevation: 0,
+          backgroundColor: const Color(0xFFD9D5EC),
+          centerTitle: true,
+          title: const Text(
+            "SIMPEL",
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
+              color: Colors.black87,
+            ),
           ),
         ),
       ),
@@ -54,7 +55,10 @@ class _AdminEditProfilScreenState extends State<AdminEditProfilScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            const SizedBox(height: 10),
+            const Text("Edit Profil",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 20),
+
             CircleAvatar(
               radius: 60,
               backgroundImage: AssetImage(
@@ -66,7 +70,6 @@ class _AdminEditProfilScreenState extends State<AdminEditProfilScreen> {
 
             const SizedBox(height: 20),
 
-            // Pilihan avatar
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -78,7 +81,6 @@ class _AdminEditProfilScreenState extends State<AdminEditProfilScreen> {
 
             const SizedBox(height: 30),
 
-            // Nama
             Align(
               alignment: Alignment.centerLeft,
               child: const Text(
@@ -87,6 +89,7 @@ class _AdminEditProfilScreenState extends State<AdminEditProfilScreen> {
               ),
             ),
             const SizedBox(height: 5),
+
             TextField(
               controller: nameController,
               decoration: InputDecoration(
@@ -98,7 +101,6 @@ class _AdminEditProfilScreenState extends State<AdminEditProfilScreen> {
 
             const SizedBox(height: 15),
 
-            // Email
             Align(
               alignment: Alignment.centerLeft,
               child: const Text(
@@ -107,6 +109,7 @@ class _AdminEditProfilScreenState extends State<AdminEditProfilScreen> {
               ),
             ),
             const SizedBox(height: 5),
+
             TextField(
               controller: emailController,
               readOnly: true,
@@ -116,18 +119,17 @@ class _AdminEditProfilScreenState extends State<AdminEditProfilScreen> {
                     OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
               ),
             ),
+
             const SizedBox(height: 30),
+
             SizedBox(
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.zero,
+                  backgroundColor: const Color(0xFF3C53CC),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  backgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
+                      borderRadius: BorderRadius.circular(30)),
                 ),
                 onPressed: () async {
                   String avatar = selectedAvatar == "female"
@@ -142,31 +144,10 @@ class _AdminEditProfilScreenState extends State<AdminEditProfilScreen> {
 
                   Navigator.pop(context);
                 },
-                child: Ink(
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [
-                        Color(0xFF4D55CC),
-                        Color(0xFF7A73D1),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  child: const Center(
-                    child: Text(
-                      "Simpan Perubahan",
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
+                child: const Text("Simpan Perubahan",
+                    style: TextStyle(fontSize: 16,color: Colors.white)),
               ),
-            ),
+            )
           ],
         ),
       ),

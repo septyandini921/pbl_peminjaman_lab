@@ -5,6 +5,7 @@ import '../../../service/lab_service.dart';
 import '../../../models/labs/lab_model.dart';
 import '../../widgets/student_bottom_navbar.dart';
 import 'booking_screen.dart';
+import '../../widgets/app_bar.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -60,17 +61,19 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final labService = LabService();
     final userName = getCurrentUserEmail().split('@').first;
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Beranda Mahasiswa'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () => _logout(context),
-          ),
-        ],
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(110),
+        child: CustomAppBar(
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.logout, color: Colors.white),
+              onPressed: () => _logout(context),
+            ),
+          ],
+        ),
       ),
-      bottomNavigationBar: const BottomNavBar(currentIndex: 0),
       body: CustomScrollView(
         slivers: [
           SliverList(
@@ -145,10 +148,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),
-
               // Daftar Lab
               StreamBuilder<List<LabModel>>(
                 stream: labService.getActiveLabs(),
@@ -196,7 +199,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => PeminjamanScreen(lab: lab), 
+                                builder: (_) => PeminjamanScreen(lab: lab),
                               ),
                             );
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -238,6 +241,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                           fontWeight: FontWeight.bold,
                                           fontSize: 16,
                                         ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                       const Text(
                                         "Ketuk untuk melihat detail peminjaman",
@@ -268,6 +273,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+      bottomNavigationBar: const BottomNavBar(currentIndex: 0),
     );
   }
 }

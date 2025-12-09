@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import '../screens/student/home_screen.dart';
-import '../screens/student/notification_screen.dart';
 import '../screens/student/info_screen.dart';
 import '../screens/student/profil_student.dart';
-
+import '../screens/student/notification_screen.dart';
 
 class BottomNavBar extends StatelessWidget {
   final int currentIndex;
@@ -16,6 +15,7 @@ class BottomNavBar extends StatelessWidget {
   void _onTap(BuildContext context, int index) {
     if (index == currentIndex) return;
 
+    // Handle navigation based on tapped index
     switch (index) {
       case 0:
         Navigator.pushReplacement(
@@ -37,7 +37,7 @@ class BottomNavBar extends StatelessWidget {
             reverseTransitionDuration: Duration.zero,
           ),
         );
-        break;
+        break;  
 
       case 2:
         Navigator.pushReplacement(
@@ -69,10 +69,10 @@ class BottomNavBar extends StatelessWidget {
       currentIndex: currentIndex,
       onTap: (index) => _onTap(context, index),
 
-      backgroundColor: Colors.white,
-      selectedItemColor: Colors.indigo,
-      unselectedItemColor: Colors.grey,
-      type: BottomNavigationBarType.fixed, 
+      backgroundColor: const Color(0xFF3949AB), // Warna background ungu
+      selectedItemColor: Colors.white, // Warna ikon yang dipilih
+      unselectedItemColor: Colors.white70, // Warna ikon yang tidak dipilih
+      type: BottomNavigationBarType.fixed, // Tipe bottom nav bar tetap
 
       items: const [
         BottomNavigationBarItem(
@@ -80,7 +80,7 @@ class BottomNavBar extends StatelessWidget {
           label: "Beranda",
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.notifications), 
+          icon: Icon(Icons.notifications),
           label: "Notifikasi",
         ),
         BottomNavigationBarItem(

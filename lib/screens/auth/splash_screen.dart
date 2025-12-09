@@ -1,12 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-
-import '../../../auth/auth_controller.dart';
+import 'dart:async';
 import 'login_screen.dart';
-
-import '../student/home_screen.dart' as StudentHomeScreen;
-import '../admin/home_screen.dart' as AdminHomeScreen;
+import 'welcome_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -19,69 +14,96 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _navigateUser();
-  }
 
-  Future<void> _navigateUser() async {
-    await Future.delayed(const Duration(seconds: 2));
-
-    User? user = FirebaseAuth.instance.currentUser;
-
-    if (user == null) {
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
-        );
-      }
-      return; 
-    }
-
-    try {
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance
-          .collection('Users') 
-          .doc(user.uid)
-          .get();
-
-      if (userDoc.exists) {
-        int userRole = (userDoc.data() as Map<String, dynamic>)['user_auth'] as int;
-
-        AuthController.instance.currentUserRole.value = userRole;
-        AuthController.instance.currentUserEmail.value = user.email;
-
-        if (mounted) {
-          if (userRole == 0) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => const StudentHomeScreen.HomeScreen()),
-            );
-          } else if (userRole == 1) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => const AdminHomeScreen.HomeScreen()),
-            );
-          } else {
-            throw Exception('Role tidak valid');
-          }
-        }
-      } else {
-        throw Exception('Data user tidak ditemukan');
-      }
-    } catch (e) {
-      await AuthController.instance.signOut();
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
-        );
-      }
-    }
+    Timer(const Duration(seconds: 3), () {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+      );
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
+    final width = MediaQuery.of(context).size.width;
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Stack(
+        children: [
+          Positioned(
+            top: -width * 0.20,
+            right: -width * 0.25,
+            child: Container(
+              width: width * 0.45,
+              height: width * 0.45,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [
+                    Color(0xFF211C84),
+                    Color(0xFF6A5AE0),
+                    Color(0xFF9A85ED),
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
+            ),
+          ),
+
+          Positioned(
+            bottom: -width * 0.35,
+            left: -width * 0.32,
+            child: Container(
+              width: width * 0.65,
+              height: width * 0.65,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [
+                    Color(0xFF211C84),
+                    Color(0xFF6A5AE0),
+                    Color(0xFF9A85ED),
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
+            ),
+          ),
+
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Image.asset(
+                  'assets/images/karakter.png',
+                  width: width * 0.30,
+                ),
+                const SizedBox(height: 28),
+                const Text(
+                  "SIMPEL",
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  "Sistem Peminjaman Lab",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

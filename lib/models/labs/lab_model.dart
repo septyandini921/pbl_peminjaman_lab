@@ -1,3 +1,4 @@
+//C:\Kuliah\semester5\Moblie\PBL\pbl_peminjaman_lab\lib\models\labs\lab_model.dart
 class LabModel {
   final String id;               
   final String labKode;

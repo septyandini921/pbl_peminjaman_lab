@@ -73,4 +73,36 @@ class AuthController {
     currentUserRole.value = null;
     currentUserEmail.value = null;
   }
+
+  Future<void> register( String name, String email, String password, int role) async {
+    try {
+      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      User? user = userCredential.user;
+      if (user == null) throw 'Register gagal, user tidak valid.';
+
+      await _firestore.collection('Users').doc(user.uid).set({
+        'user_name': name,
+        'user_email': email,
+        'user_auth': 0, 
+        'avatar': "assets/avatar/Avatar_Woman.jpg",     
+      });
+
+      currentUserRole.value = role;
+      currentUserEmail.value = email;
+
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'email-already-in-use') {
+        throw 'Email sudah terdaftar';
+      } else if (e.code == 'weak-password') {
+        throw 'Password harus lebih kuat';
+      }
+      throw 'Terjadi kesalahan: ${e.message}';
+    } catch (e) {
+      throw e.toString();
+    }
+  }
 }

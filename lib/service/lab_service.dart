@@ -1,7 +1,9 @@
+//C:\Kuliah\semester5\Moblie\PBL\pbl_peminjaman_lab\lib\service\lab_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/labs/lab_model.dart';
 
 class LabService {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final CollectionReference labsRef = FirebaseFirestore.instance.collection(
     'Labs',
   );
@@ -63,4 +65,18 @@ class LabService {
       'is_show': false,
     });
   }
+
+  Future<String> getLabNameById(String labId) async {
+    if (labId.isEmpty) return 'Lab Tidak Ditemukan';
+    try {
+        final DocumentSnapshot doc = await labsRef.doc(labId).get();
+        if (doc.exists) {
+            final data = doc.data() as Map<String, dynamic>;
+            return data['lab_name'] as String? ?? 'Nama Lab Tidak Ditemukan';
+        }
+        return 'Lab Tidak Ditemukan';
+    } catch (e) {
+        return 'Error: $e';
+    }
+}
 }
