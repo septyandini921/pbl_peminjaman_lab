@@ -1,12 +1,23 @@
-//C:\Kuliah\semester5\Moblie\PBL\pbl_peminjaman_lab\lib\service\lab_service.dart
+// lib/service/lab_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/labs/lab_model.dart';
 
 class LabService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final CollectionReference labsRef = FirebaseFirestore.instance.collection(
-    'Labs',
-  );
+  final FirebaseFirestore _firestore;
+  late final CollectionReference labsRef;
+
+  // Constructor normal
+  LabService()
+      : _firestore = FirebaseFirestore.instance {
+    labsRef = _firestore.collection('Labs');
+  }
+
+  // Constructor untuk testing
+  LabService.testConstructor({
+    required FirebaseFirestore firestore,
+  }) : _firestore = firestore {
+    labsRef = _firestore.collection('Labs');
+  }
 
   /// Get semua data lab
   Stream<List<LabModel>> getLabs() {
@@ -22,16 +33,16 @@ class LabService {
 
   Stream<List<LabModel>> getActiveLabs() {
     return labsRef
-        .where('is_show', isEqualTo: true) 
+        .where('is_show', isEqualTo: true)
         .snapshots()
         .map((snapshot) {
-          return snapshot.docs.map((doc) {
-            return LabModel.fromFirestore(
-              doc.id,
-              doc.data() as Map<String, dynamic>,
-            );
-          }).toList();
-        });
+      return snapshot.docs.map((doc) {
+        return LabModel.fromFirestore(
+          doc.id,
+          doc.data() as Map<String, dynamic>,
+        );
+      }).toList();
+    });
   }
 
   /// Toggle is_show field
@@ -69,14 +80,14 @@ class LabService {
   Future<String> getLabNameById(String labId) async {
     if (labId.isEmpty) return 'Lab Tidak Ditemukan';
     try {
-        final DocumentSnapshot doc = await labsRef.doc(labId).get();
-        if (doc.exists) {
-            final data = doc.data() as Map<String, dynamic>;
-            return data['lab_name'] as String? ?? 'Nama Lab Tidak Ditemukan';
-        }
-        return 'Lab Tidak Ditemukan';
+      final DocumentSnapshot doc = await labsRef.doc(labId).get();
+      if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>;
+        return data['lab_name'] as String? ?? 'Nama Lab Tidak Ditemukan';
+      }
+      return 'Lab Tidak Ditemukan';
     } catch (e) {
-        return 'Error: $e';
+      return 'Error: $e';
     }
-}
+  }
 }
