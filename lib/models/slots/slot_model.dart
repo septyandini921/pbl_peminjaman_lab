@@ -1,3 +1,4 @@
+//C:\Kuliah\semester5\Moblie\PBL\pbl_peminjaman_lab\lib\models\slots\slot_model.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SlotModel {

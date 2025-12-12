@@ -1,11 +1,18 @@
+//C:\Kuliah\semester5\Moblie\PBL\pbl_peminjaman_lab\lib\service\slot_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/slots/slot_model.dart';
 import '../models/labs/lab_model.dart';
 import 'package:flutter/material.dart';
 
 class SlotService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+final FirebaseFirestore _firestore;
   final String _collectionName = 'Slots';
+
+  SlotService() : _firestore = FirebaseFirestore.instance;
+
+  SlotService.testConstructor({
+    required FirebaseFirestore firestore,
+  }) : _firestore = firestore;
 
   Stream<List<SlotModel>> getSlotsStreamByDate({
     required LabModel lab,
