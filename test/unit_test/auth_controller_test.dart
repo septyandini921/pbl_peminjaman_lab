@@ -7,16 +7,15 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 void main() {
-  group('AuthController Tests', () {
+  group('AuthController Tests', () { //group test
     late MockFirebaseAuth mockAuth;
     late fcs.FakeFirebaseFirestore mockFirestore;
-    late AuthController authController;
+    late AuthController authController; //controller yang ingin diuji
 
-    setUp(() {
+    setUp(() { //setup ulang mock sebelum tiap test
       mockAuth = MockFirebaseAuth();
       mockFirestore = fcs.FakeFirebaseFirestore();
       
-      // Initialize AuthController dengan dependencies mock
       authController = AuthController.testConstructor(
         auth: mockAuth,
         firestore: mockFirestore,
@@ -24,8 +23,7 @@ void main() {
     });
 
     test('Login berhasil dan mendapatkan user role', () async {
-      // Arrange
-      final mockUser = MockUser(
+      final mockUser = MockUser( //membuat mock user
         email: 'test@example.com',
         uid: '12345',
         isEmailVerified: true,
@@ -45,13 +43,12 @@ void main() {
         firestore: mockFirestore,
       );
 
-      // Act
-      final userRole = await authController.signIn(
+      final userRole = await authController.signIn( //eksekusi fungsi yang diuji
         'test@example.com', 
         'password123'
       );
 
-      // Assert
+      // Assert (pengecekan hasil)
       expect(userRole, 1);
       expect(authController.currentUserRole.value, 1);
       expect(authController.currentUserEmail.value, 'test@example.com');
