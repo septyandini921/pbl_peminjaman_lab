@@ -22,33 +22,42 @@ class _HomeScreenState extends State<HomeScreen> {
   String userName = "Pengguna";
 
   @override
+  void initState() {
+    super.initState();
+    _loadUserName();
+  }
+
+  Future<void> _loadUserName() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      final snapshot = await FirebaseFirestore.instance
+          .collection("Users")
+          .doc(user.uid)
+          .get();
+
+      /// ⛔ FIX UTAMA: Cek apakah widget masih mounted sebelum setState
+      if (!mounted) return;
+
+      setState(() {
+        userName = snapshot.data()?["user_name"] ?? "Pengguna";
+      });
+    } catch (e) {
+      // Error diamkan saja
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: const Key('home_screen'),
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: const CustomAppBar(actions: []),
       bottomNavigationBar: const BottomNavBar(currentIndex: 0),
       body: _buildBody(),
     );
   }
-@override
-void initState() {
-  super.initState();
-  _loadUserName();
-}
-
-Future<void> _loadUserName() async {
-  final user = FirebaseAuth.instance.currentUser;
-  if (user != null) {
-    final snapshot = await FirebaseFirestore.instance
-        .collection("Users")
-        .doc(user.uid)
-        .get();
-
-    setState(() {
-      userName = snapshot.data()?["user_name"] ?? "Pengguna"; // ← S IMPAN DI STATE
-    });
-  }
-}
 
   Widget _buildBody() {
     return SingleChildScrollView(
@@ -68,6 +77,7 @@ Future<void> _loadUserName() async {
 
   Widget _welcomeCard() {
     return Container(
+      key: const Key('home_welcome_card'),
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
       decoration: BoxDecoration(
@@ -82,9 +92,10 @@ Future<void> _loadUserName() async {
         children: [
           Image.asset("assets/icons/bot.png", width: 55),
           const SizedBox(width: 12),
-           Text(
+          Text(
             "Selamat Datang $userName",
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+            key: const Key('home_welcome_text'),
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -93,6 +104,7 @@ Future<void> _loadUserName() async {
 
   Widget _statistikSimpel() {
     return Container(
+      key: const Key('home_statistik'),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -120,14 +132,22 @@ Future<void> _loadUserName() async {
                 stream: _bookingService.getAllBookingsCountWeekly(),
                 builder: (context, snapshot) {
                   final value = snapshot.data?.toString() ?? "0";
-                  return _statBox(value, "Pengajuan");
+                  return _statBox(
+                    value,
+                    "Pengajuan",
+                    key: const Key('stat_pengajuan'),
+                  );
                 },
               ),
               StreamBuilder<int>(
                 stream: _bookingService.getConfirmedBookingsCountWeekly(),
                 builder: (context, snapshot) {
                   final value = snapshot.data?.toString() ?? "0";
-                  return _statBox(value, "Peminjaman");
+                  return _statBox(
+                    value,
+                    "Peminjaman",
+                    key: const Key('stat_peminjaman'),
+                  );
                 },
               ),
             ],
@@ -139,6 +159,7 @@ Future<void> _loadUserName() async {
             builder: (context, usedSnapshot) {
               final usedCount = usedSnapshot.data ?? 0;
               return Container(
+                key: const Key('stat_slot_terpakai'),
                 padding: const EdgeInsets.symmetric(
                   vertical: 18,
                   horizontal: 10,
@@ -173,10 +194,9 @@ Future<void> _loadUserName() async {
       builder: (context, snapshot) {
         String labName = "N/A";
         int totalPeminjaman = 0;
+
         if (snapshot.connectionState == ConnectionState.waiting) {
           labName = "Memuat...";
-        } else if (snapshot.hasError) {
-          labName = "Error Data";
         } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
           final sortedLabs = snapshot.data!.entries.toList()
             ..sort((a, b) => b.value.compareTo(a.value));
@@ -200,6 +220,7 @@ Future<void> _loadUserName() async {
 
   Widget _buildStyledLabDisplay(String labName, int totalPeminjaman) {
     return Container(
+      key: const Key('home_lab_paling_dipinjam'),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -220,8 +241,8 @@ Future<void> _loadUserName() async {
             ),
           ),
           const SizedBox(height: 15),
-
           Row(
+            key: const Key('lab_total_peminjaman'),
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               Column(
@@ -232,6 +253,7 @@ Future<void> _loadUserName() async {
                     width: 100,
                     child: Text(
                       labName,
+                      key: const Key('lab_name_text'),
                       textAlign: TextAlign.center,
                       style: const TextStyle(color: Colors.white),
                       overflow: TextOverflow.ellipsis,
@@ -248,8 +270,9 @@ Future<void> _loadUserName() async {
     );
   }
 
-  Widget _statBox(String value, String label) {
+  Widget _statBox(String value, String label, {Key? key}) {
     return Container(
+      key: key,
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 28),
       decoration: BoxDecoration(
         color: Colors.white,

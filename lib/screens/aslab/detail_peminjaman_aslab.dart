@@ -15,7 +15,7 @@ class DetailPeminjamanAslab extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        automaticallyImplyLeading: false,
+        automaticallyImplyLeading: true,
         title: const Text(
           "SIMPEL",
           style: TextStyle(
@@ -61,6 +61,7 @@ class DetailPeminjamanAslab extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 GestureDetector(
+                  key: const Key('btn_back'),
                   onTap: () => Navigator.pop(context),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -139,10 +140,7 @@ class DetailPeminjamanAslab extends StatelessWidget {
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 15),
-                  _buildFigmaRow(
-                    "Kehadiran",
-                    booking.isPresent ? "Hadir" : "Tidak Hadir",
-                  ),
+                  _buildFigmaRow("Kehadiran:", booking.isPresent ? "Hadir" : "Tidak Hadir")
                 ],
 
                 const SizedBox(height: 30),
@@ -158,6 +156,7 @@ class DetailPeminjamanAslab extends StatelessWidget {
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton(
+                    key: Key('btn_hadir'),
                       onPressed: booking.isPresent
                           ? null
                           : () async {
@@ -169,10 +168,12 @@ class DetailPeminjamanAslab extends StatelessWidget {
                                       'Apakah anda yakin akan mengonfirmasi status kehadiran sebagai Hadir?'),
                                   actions: [
                                     TextButton(
+                                    key: const Key('dialog_cancel'),
                                       onPressed: () => Navigator.of(context).pop(false),
                                       child: const Text('Batal'),
                                     ),
                                     TextButton(
+                                      key: const Key('dialog_yes'),
                                       onPressed: () => Navigator.of(context).pop(true),
                                       child: const Text('Ya'),
                                     ),
@@ -181,7 +182,11 @@ class DetailPeminjamanAslab extends StatelessWidget {
                               );
                               if (confirm == true) {
                                 await bookingService.setPresent(booking.id);
-                                if (context.mounted) Navigator.pop(context);
+
+                                // tutup HALAMAN detail, kembali ke list
+                                if (context.mounted) {
+                                  Navigator.pop(context, true);
+                                }
                               }
                             },
                       style: ElevatedButton.styleFrom(

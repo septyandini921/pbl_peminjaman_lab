@@ -47,6 +47,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     final width = MediaQuery.of(context).size.width;
 
     return Scaffold(
+      key: const Key('welcome_screen'),
       backgroundColor: Colors.white,
       body: Container(
         width: double.infinity,
@@ -66,7 +67,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            
+
             // ================= ANIMATED MASKOT =================
             AnimatedBuilder(
               animation: _controller,
@@ -150,6 +151,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
                   // SIGN UP
                   GestureDetector(
+                    key: const Key('welcome_signup'),
                     onTap: () {
                       Navigator.push(
                         context,
@@ -169,6 +171,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
                   // SIGN IN
                   GestureDetector(
+                      key: const Key('welcome_signin'),
                     onTap: () {
                       Navigator.push(
                         context,

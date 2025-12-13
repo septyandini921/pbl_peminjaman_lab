@@ -227,6 +227,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     Widget _buildEmailField() {
       return TextField(
+        key: const Key('login_email'),
         controller: _emailController,
         keyboardType: TextInputType.emailAddress,
         style: const TextStyle(fontSize: 14, color: Colors.black87),
@@ -256,8 +257,9 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     }
 
-   Widget _buildPasswordField() {
+  Widget _buildPasswordField() {
   return TextField(
+    key: const Key('login_password'),
     controller: _passwordController,
     obscureText: _obscurePassword,
     style: const TextStyle(fontSize: 14, color: Colors.black87),
@@ -345,6 +347,7 @@ class _LoginScreenState extends State<LoginScreen> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: InkWell(
+        key: const Key('login_button'),
         onTap: _login,
         borderRadius: BorderRadius.circular(12),
         splashColor: Colors.white24,

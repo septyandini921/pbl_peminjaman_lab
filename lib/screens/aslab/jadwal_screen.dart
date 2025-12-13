@@ -48,6 +48,7 @@ class _JadwalScreenState extends State<JadwalScreen> {
     final bookingService = BookingService();
 
     return Scaffold(
+      key: const Key('jadwal_screen'),
       backgroundColor: const Color(0xFFF5F5F5),
 
       appBar: PreferredSize(
@@ -55,11 +56,14 @@ class _JadwalScreenState extends State<JadwalScreen> {
         child: _customHeader(),
       ),
 
+    bottomNavigationBar: const BottomNavBar(currentIndex: 1),
+
       body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: GestureDetector(
+              key: const Key('tanggal_picker'),
               onTap: () async {
                 final picked = await showDatePicker(
                   context: context,
@@ -123,117 +127,132 @@ class _JadwalScreenState extends State<JadwalScreen> {
                 }
 
                 return ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: filtered.length,
-                  itemBuilder: (context, index) {
-                    final b = filtered[index];
+  padding: const EdgeInsets.all(16),
+  itemCount: filtered.length,
+  itemBuilder: (context, index) {
+    final b = filtered[index];
 
-                    return FutureBuilder(
-                      future: Future.wait([
-                        FirebaseFirestore.instance.doc(b.slotRef!.path).get(),
-                        FirebaseFirestore.instance.doc(b.userRef!.path).get(),
-                      ]),
-                      builder: (context, AsyncSnapshot<List<DocumentSnapshot>> snap2) {
-                        if (!snap2.hasData) return const SizedBox();
+    return FutureBuilder<List<DocumentSnapshot>>(
+      key: Key('booking_future_$index'),
+      future: Future.wait([
+        FirebaseFirestore.instance.doc(b.slotRef!.path).get(),
+        FirebaseFirestore.instance.doc(b.userRef!.path).get(),
+      ]),
+      builder: (context, snap2) {
+        if (snap2.connectionState == ConnectionState.waiting) {
+          return const SizedBox(); // biar tidak flicker
+        }
 
-                        final slot = snap2.data![0];
-                        final slotStart = (slot["slot_start"] as Timestamp)
-                            .toDate();
-                        final slotEnd = (slot["slot_end"] as Timestamp)
-                            .toDate();
+        if (!snap2.hasData || snap2.data == null || snap2.data!.length < 2) {
+          return const SizedBox();
+        }
 
-                        return InkWell(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    DetailPeminjamanAslab(booking: b),
-                              ),
-                            );
-                          },
-                          child: Card(
-                            margin: const EdgeInsets.only(bottom: 15),
-                            elevation: 4,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "Peminjaman: ${b.bookCode}",
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    "Peminjam: ${b.bookBy} (${b.bookNim})",
-                                    style: const TextStyle(fontSize: 14),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    "Waktu: ${slotStart.hour}:${slotStart.minute.toString().padLeft(2, '0')} "
-                                    "- ${slotEnd.hour}:${slotEnd.minute.toString().padLeft(2, '0')}",
-                                    style: const TextStyle(fontSize: 14),
-                                  ),
-                                  const SizedBox(height: 8),
+        final slot = snap2.data![0];
 
-                                  // STATUS KONFIRMASI (Tetap ada)
-                                  Text(
-                                    b.isRejected
-                                        ? "Status: Ditolak"
-                                        : b.isConfirmed
-                                        ? "Status: Sudah dikonfirmasi"
-                                        : "Status: Menunggu konfirmasi",
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      color: b.isRejected
-                                          ? Colors.red
-                                          : b.isConfirmed
-                                          ? Colors.green
-                                          : Colors.orange,
-                                    ),
-                                  ),
+        if (!slot.exists || slot.data() == null) {
+          return const SizedBox();
+        }
 
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    b.isPresent == null
-                                        ? "Kehadiran: Belum dikonfirmasi"
-                                        : b.isPresent == true
-                                        ? "Kehadiran: Hadir"
-                                        : "Kehadiran: Tidak Hadir",
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      color: b.isPresent == null
-                                          ? Colors.orange
-                                          : b.isPresent == true
-                                          ? Colors.green
-                                          : Colors.red,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                );
+        final slotStart = (slot["slot_start"] as Timestamp).toDate();
+        final slotEnd = (slot["slot_end"] as Timestamp).toDate();
+
+        String fmt(DateTime t) =>
+            "${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}";
+
+        return InkWell(
+          key: Key('card_booking_$index'),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => DetailPeminjamanAslab(booking: b),
+              ),
+            );
+          },
+          child: Card(
+            margin: const EdgeInsets.only(bottom: 15),
+            elevation: 4,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Peminjaman: ${b.bookCode}",
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  Text(
+                    "Peminjam: ${b.bookBy} (${b.bookNim})",
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                  const SizedBox(height: 8),
+
+                  Text(
+                    "Waktu: ${fmt(slotStart)} - ${fmt(slotEnd)}",
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                  const SizedBox(height: 8),
+
+                  /// STATUS KONFIRMASI
+                  Text(
+                    b.isRejected
+                        ? "Status: Ditolak"
+                        : b.isConfirmed
+                            ? "Status: Sudah dikonfirmasi"
+                            : "Status: Menunggu konfirmasi",
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: b.isRejected
+                          ? Colors.red
+                          : b.isConfirmed
+                              ? Colors.green
+                              : Colors.orange,
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  /// STATUS KEHADIRAN
+                  Text(
+                    b.isPresent == null
+                        ? "Kehadiran: Belum dikonfirmasi"
+                        : b.isPresent!
+                            ? "Kehadiran: Hadir"
+                            : "Kehadiran: Tidak Hadir",
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: b.isPresent == null
+                          ? Colors.orange
+                          : b.isPresent!
+                              ? Colors.green
+                              : Colors.red,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  },
+);
+
               },
             ),
           ),
         ],
       ),
-
-      bottomNavigationBar: const BottomNavBar(currentIndex: 1),
     );
   }
 }

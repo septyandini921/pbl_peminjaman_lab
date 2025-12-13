@@ -28,6 +28,7 @@ class _SplashScreenState extends State<SplashScreen> {
     final width = MediaQuery.of(context).size.width;
 
     return Scaffold(
+      key: const Key('splash_screen'),
       backgroundColor: Colors.white,
       body: Stack(
         children: [
