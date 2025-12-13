@@ -1,10 +1,21 @@
+// C:\Kuliah\semester5\Moblie\PBL\pbl_peminjaman_lab\lib\service\user_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user/user_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class UserService {
-  final CollectionReference users =
-      FirebaseFirestore.instance.collection('Users');
+  final FirebaseFirestore firestore;
+  final FirebaseAuth auth;
+
+  // Constructor untuk production
+  UserService()
+      : firestore = FirebaseFirestore.instance,
+        auth = FirebaseAuth.instance;
+
+  // Constructor untuk testing (dependency injection)
+  UserService.forTesting({required this.firestore, required this.auth});
+
+  CollectionReference get users => firestore.collection('Users');
 
   // 🔹 Get user by UID
   Future<UserModel?> getUser(String uid) async {

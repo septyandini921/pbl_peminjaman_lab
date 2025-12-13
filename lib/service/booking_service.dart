@@ -5,8 +5,16 @@ import '../models/slots/slot_model.dart';
 import '../models/booking/booking_model.dart';
 
 class BookingService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore;
   final String _collectionName = "Booking";
+
+  // Constructor normal
+  BookingService() : _firestore = FirebaseFirestore.instance;
+
+  // Constructor untuk testing - TAMBAHKAN INI
+  BookingService.testConstructor({
+    required FirebaseFirestore firestore,
+  }) : _firestore = firestore;
 
   Future<bool> isSlotAvailable({
     required LabModel lab,
